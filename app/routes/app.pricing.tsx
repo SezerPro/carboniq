@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import type { HeadersFunction, LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
 import { useLoaderData, useFetcher } from "react-router";
 import { useAppBridge } from "@shopify/app-bridge-react";
@@ -6,41 +7,76 @@ import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
 import { PLANS, type PlanTier } from "../lib/plans/constants";
 import { getPlanTier } from "../lib/plans/gates.server";
+import { createSubscription, cancelSubscription, syncPlanFromShopify, getActiveSubscription } from "../lib/plans/billing.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const { session, admin } = await authenticate.admin(request);
+
+  // Sync plan from Shopify on every load (catches approved/canceled subscriptions)
+  await syncPlanFromShopify(admin, session.shop);
+
   const shop = await db.shop.findUnique({ where: { shopDomain: session.shop } });
   const currentTier = getPlanTier(shop?.plan, shop?.planStatus);
-  return { currentTier, shopDomain: session.shop };
+
+  // Get active subscription info
+  const activeSub = await getActiveSubscription(admin);
+
+  return {
+    currentTier,
+    shopDomain: session.shop,
+    activeSub: activeSub ? {
+      name: activeSub.name,
+      status: activeSub.status,
+      trialDays: activeSub.trialDays,
+    } : null,
+  };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const { session, admin } = await authenticate.admin(request);
   const formData = await request.formData();
+  const intent = formData.get("intent") as string;
   const plan = formData.get("plan") as string;
 
   const shop = await db.shop.findUnique({ where: { shopDomain: session.shop } });
   if (!shop) return { error: "Shop not found" };
 
-  // Update plan (in production, this would go through Shopify billing API)
-  await db.shop.update({
-    where: { id: shop.id },
-    data: {
-      plan: plan as any,
-      planStatus: plan === "FREE" ? "ACTIVE" : "TRIALING",
-      trialEndsAt: plan !== "FREE" ? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) : null,
-    },
-  });
+  // ── Downgrade to Free ──
+  if (intent === "downgrade" || plan === "FREE") {
+    const activeSub = await getActiveSubscription(admin);
+    if (activeSub) {
+      await cancelSubscription(admin, activeSub.id);
+    }
+    await db.shop.update({
+      where: { id: shop.id },
+      data: { plan: "STARTER", planStatus: "CANCELED" },
+    });
+    return { success: true, plan: "FREE" };
+  }
 
-  // Update subscription limits
-  const limits: Record<string, number> = { FREE: 10, STARTER: 100, GROWTH: 1000, SCALE: 999999 };
-  await db.subscription.upsert({
-    where: { shopId: shop.id },
-    create: { shopId: shop.id, plan: plan as any, status: "TRIALING", productLimit: limits[plan] ?? 10 },
-    update: { plan: plan as any, status: "TRIALING", productLimit: limits[plan] ?? 10 },
-  });
+  // ── Upgrade to paid plan ──
+  if (intent === "upgrade" && (plan === "STARTER" || plan === "GROWTH" || plan === "SCALE")) {
+    // Build the return URL (merchant comes back here after approving)
+    const url = new URL(request.url);
+    const returnUrl = `${url.origin}/app/pricing`;
 
-  return { success: true, plan };
+    const result = await createSubscription(
+      admin,
+      plan as Exclude<PlanTier, "FREE">,
+      session.shop,
+      returnUrl,
+      true, // test mode in dev — set to false for production
+    );
+
+    if ("error" in result) {
+      return { error: result.error };
+    }
+
+    // Redirect merchant to Shopify's confirmation page
+    return { confirmationUrl: result.confirmationUrl };
+  }
+
+  return { error: "Action inconnue" };
 };
 
 const TIER_LEVEL: Record<string, number> = { FREE: 0, STARTER: 1, GROWTH: 2, SCALE: 3 };
@@ -51,10 +87,27 @@ export default function Pricing() {
   const shopify = useAppBridge();
   const isChanging = fetcher.state !== "idle";
 
+  // Handle redirect to Shopify confirmation page
+  useEffect(() => {
+    if (fetcher.data && "confirmationUrl" in fetcher.data) {
+      // Redirect to Shopify's billing approval page
+      open(fetcher.data.confirmationUrl as string, "_top");
+    }
+    if (fetcher.data && "success" in fetcher.data) {
+      shopify.toast.show("Plan mis à jour !");
+    }
+    if (fetcher.data && "error" in fetcher.data) {
+      shopify.toast.show(`Erreur : ${fetcher.data.error}`);
+    }
+  }, [fetcher.data, shopify]);
+
   const handleSelect = (tier: PlanTier) => {
     if (tier === currentTier) return;
-    fetcher.submit({ plan: tier === "FREE" ? "FREE" : tier }, { method: "POST" });
-    shopify.toast.show(`Plan ${tier} activé !`);
+    if (tier === "FREE") {
+      fetcher.submit({ intent: "downgrade", plan: "FREE" }, { method: "POST" });
+    } else {
+      fetcher.submit({ intent: "upgrade", plan: tier }, { method: "POST" });
+    }
   };
 
   return (
