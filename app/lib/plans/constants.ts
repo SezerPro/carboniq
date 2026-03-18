@@ -72,18 +72,18 @@ export const PLANS: PlanInfo[] = [
     tier: "STARTER", name: "Starter", price: "14,90€", priceNum: 14.90, period: "/mois",
     description: "Compensez et communiquez votre impact", badge: "Populaire",
     features: ["100 produits analysés", "4 styles de badge premium", "Compensation carbone (API)", "Certificats d'impact (50/mois)", "Suggestions de réduction", "Rapport RSE mensuel", "Portail d'impact public", "Paramètres complets"],
-    limits: "100 produits · 50 certificats/mois", cta: "Essai gratuit 14 jours",
+    limits: "100 produits · 50 certificats/mois", cta: "Commencer maintenant",
   },
   {
     tier: "GROWTH", name: "Growth", price: "49,90€", priceNum: 49.90, period: "/mois",
     description: "Analysez, optimisez et préparez-vous à l'EU 2027", badge: "Recommandé",
     features: ["1 000 produits analysés", "Tout Starter +", "Analytiques avancés & équivalences", "Passeport Produit Digital (DPP EU)", "A/B Testing du badge", "IA auto-catégorisation", "Benchmarking secteur", "Intégration Klaviyo", "Multi-impact (arbres + océan)", "ROI Dashboard", "Rapports trimestriels"],
-    limits: "1 000 produits · 500 certificats/mois", cta: "Essai gratuit 14 jours",
+    limits: "1 000 produits · 500 certificats/mois", cta: "Commencer maintenant",
   },
   {
     tier: "SCALE", name: "Scale", price: "149,90€", priceNum: 149.90, period: "/mois",
     description: "Conformité totale et reporting entreprise",
     features: ["Produits illimités", "Tout Growth +", "Conformité EU Green Claims", "Scope 3 (supply chain)", "Rapports annuels CSRD", "A/B tests illimités", "Shopify Flow triggers", "Support prioritaire"],
-    limits: "Illimité", cta: "Essai gratuit 14 jours",
+    limits: "Illimité", cta: "Commencer maintenant",
   },
 ];

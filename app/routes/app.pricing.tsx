@@ -215,7 +215,7 @@ export default function Pricing() {
         {[
           { q: "Puis-je changer de plan à tout moment ?", a: "Oui, vous pouvez upgrader ou rétrograder à tout moment. Le changement prend effet immédiatement." },
           { q: "Y a-t-il un engagement ?", a: "Non, tous les plans sont sans engagement. Vous pouvez annuler à tout moment." },
-          { q: "L'essai gratuit est-il vraiment gratuit ?", a: "Oui, 14 jours d'essai sans carte bancaire. Vous ne serez facturé qu'à la fin de l'essai si vous choisissez de continuer." },
+          { q: "Comment fonctionne la facturation ?", a: "Le paiement est géré directement par Shopify sur votre facture habituelle. Pas besoin d'entrer une carte bancaire supplémentaire." },
           { q: "Que se passe-t-il si je dépasse la limite de produits ?", a: "Les produits existants restent scorés. Les nouveaux produits ne seront pas analysés tant que vous n'aurez pas upgradé." },
           { q: "Le DPP est-il obligatoire ?", a: "Le Passeport Numérique Produit sera obligatoire en EU dès 2027 pour le textile. Nous recommandons de vous préparer dès maintenant avec le plan Growth." },
         ].map((faq, i) => (

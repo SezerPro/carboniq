@@ -65,7 +65,7 @@ export async function createSubscription(
         name: PLAN_NAMES[plan],
         returnUrl,
         test: isTest,
-        trialDays: 14,
+        trialDays: 0,
         replacementBehavior: "APPLY_IMMEDIATELY",
         lineItems: [
           {
