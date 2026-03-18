@@ -69,7 +69,7 @@ export const PLANS: PlanInfo[] = [
     limits: "10 produits", cta: "Commencer gratuitement",
   },
   {
-    tier: "STARTER", name: "Starter", price: "14,90€", priceNum: 14.90, period: "/mois",
+    tier: "STARTER", name: "Starter", price: "19,90€", priceNum: 19.90, period: "/mois",
     description: "Compensez et communiquez votre impact", badge: "Populaire",
     features: ["100 produits analysés", "4 styles de badge premium", "Compensation carbone (API)", "Certificats d'impact (50/mois)", "Suggestions de réduction", "Rapport RSE mensuel", "Portail d'impact public", "Paramètres complets"],
     limits: "100 produits · 50 certificats/mois", cta: "Commencer maintenant",

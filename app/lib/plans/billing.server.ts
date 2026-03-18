@@ -2,7 +2,7 @@ import db from "../../db.server";
 import type { PlanTier } from "./constants";
 
 const PLAN_PRICES: Record<Exclude<PlanTier, "FREE">, number> = {
-  STARTER: 14.90,
+  STARTER: 19.90,
   GROWTH: 49.90,
   SCALE: 149.90,
 };
