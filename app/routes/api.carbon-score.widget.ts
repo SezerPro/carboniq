@@ -150,7 +150,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   try {
     const shop = await prisma.shop.findUnique({
-      where: { shopifyDomain: shopDomain },
+      where: { shopDomain },
     });
 
     if (!shop) return silentResponse();

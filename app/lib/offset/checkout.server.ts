@@ -91,8 +91,10 @@ export async function recordOffset(params: {
     where: { id: shopId },
     select: {
       id: true,
-      treesEnabled: true,
-      oceanEnabled: true,
+      enableTrees: true,
+      enableOcean: true,
+      treeCostEur: true,
+      oceanCostEur: true,
     },
   });
 
@@ -110,28 +112,22 @@ export async function recordOffset(params: {
 
   const impactActions: Array<{ type: string; label: string }> = [];
 
-  if (shop?.treesEnabled) {
-    impactActions.push({
-      type: "TREE",
-      label: "Tree planting contribution",
-    });
+  if (shop?.enableTrees) {
+    impactActions.push({ type: "TREE" });
   }
 
-  if (shop?.oceanEnabled) {
-    impactActions.push({
-      type: "OCEAN",
-      label: "Ocean plastic removal contribution",
-    });
+  if (shop?.enableOcean) {
+    impactActions.push({ type: "OCEAN" });
   }
 
   if (impactActions.length > 0) {
     await prisma.impactAction.createMany({
       data: impactActions.map((action) => ({
-        offsetId: offset.id,
         shopId,
-        type: action.type,
-        label: action.label,
-        status: "PENDING",
+        type: action.type as any,
+        quantity: action.type === "TREE" ? 1 : 0.5,
+        costEur: action.type === "TREE" ? (shop?.treeCostEur ?? 0.4) : (shop?.oceanCostEur ?? 0.05),
+        orderId,
       })),
     });
   }
@@ -151,7 +147,6 @@ export async function completeOffset(
     data: {
       status: "COMPLETED",
       providerRef: providerRef ?? null,
-      completedAt: new Date(),
     },
   });
 

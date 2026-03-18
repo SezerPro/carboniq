@@ -30,31 +30,32 @@ export async function createCertificate(offsetId: string) {
         select: {
           id: true,
           name: true,
-          domain: true,
-          logoUrl: true,
+          shopDomain: true,
+          enableTrees: true,
+          enableOcean: true,
         },
       },
-      impactActions: true,
     },
   });
 
   // Ensure uniqueness of the code
   let code = generateCertCode();
-  let existing = await prisma.certificate.findUnique({ where: { code } });
+  let existing = await prisma.certificate.findUnique({ where: { uniqueCode: code } });
   while (existing) {
     code = generateCertCode();
-    existing = await prisma.certificate.findUnique({ where: { code } });
+    existing = await prisma.certificate.findUnique({ where: { uniqueCode: code } });
   }
 
   const certificate = await prisma.certificate.create({
     data: {
-      code,
+      uniqueCode: code,
       offsetId: offset.id,
       shopId: offset.shopId,
-      customerEmail: offset.customerEmail,
-      orderName: offset.orderName,
+      customerEmail: offset.customerEmail ?? "",
+      orderName: offset.orderName ?? "",
       carbonKg: offset.carbonKg,
-      amountEur: offset.amountEur,
+      treesPlanted: offset.shop?.enableTrees ? 1 : 0,
+      oceanKg: offset.shop?.enableOcean ? 0.5 : 0,
     },
   });
 
