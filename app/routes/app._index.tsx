@@ -4,7 +4,7 @@ import type {
   HeadersFunction,
   LoaderFunctionArgs,
 } from "react-router";
-import { useLoaderData, useFetcher } from "react-router";
+import { useLoaderData, useFetcher, useNavigate } from "react-router";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
@@ -335,6 +335,8 @@ export default function Index() {
     return () => { document.getElementById("cq-global-override")?.remove(); };
   }, []);
 
+  const navigate = useNavigate();
+
   const handleRecalculate = useCallback(() => {
     fetcher.submit({ intent: "recalculate" }, { method: "POST" });
   }, [fetcher]);
@@ -436,11 +438,11 @@ export default function Index() {
         {/* ── ROW 3 — Modules ── */}
         <div className="cq-mods">
           {MODULES.map((m, i) => (
-            <a key={i} className="cq-mod" href={m.r}>
+            <div key={i} className="cq-mod" onClick={() => navigate(m.r)} role="button" tabIndex={0}>
               <div className="cq-mod-icon" style={{ background: m.bg, color: m.color }} dangerouslySetInnerHTML={{ __html: m.icon }} />
               <div className="cq-mod-t">{m.t}</div>
               <div className="cq-mod-d">{m.d}</div>
-            </a>
+            </div>
           ))}
         </div>
 

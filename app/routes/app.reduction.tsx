@@ -187,7 +187,7 @@ export default function Reduction() {
                 marginBottom: 4,
               }}
             >
-              Potentiel de réduction total
+              Potentiel de réduction estimé
             </div>
             <div style={{ fontSize: 28, fontWeight: 800, color: "#047857" }}>
               -{totalPotentialSaving} kg CO{"\u2082"} ({totalPotentialPct}%)
@@ -202,7 +202,7 @@ export default function Reduction() {
             }}
           >
             <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 2 }}>
-              Actions appliquées
+              Engagements pris
             </div>
             <div style={{ fontSize: 22, fontWeight: 700, color: "#16a34a" }}>
               {progress?.appliedTips ?? 0} / {progress?.totalTips ?? 0}
@@ -295,17 +295,17 @@ export default function Reduction() {
               color="#374151"
             />
             <StatBox
-              label="Économie estimée"
+              label="Économie potentielle"
               value={`${progress.estimatedSavingKg} kg`}
               color="#d97706"
             />
             <StatBox
-              label="Économie réalisée"
+              label="Engagements pris"
               value={`${progress.achievedSavingKg} kg`}
               color="#16a34a"
             />
             <StatBox
-              label="Réduction atteinte"
+              label="Réduction estimée"
               value={`${progress.reductionPct}%`}
               color="#6366f1"
             />
@@ -451,7 +451,7 @@ export default function Reduction() {
                         marginTop: 4,
                       }}
                     >
-                      Appliqué le{" "}
+                      Engagement pris le{" "}
                       {new Date(tip.appliedAt).toLocaleDateString("fr-FR")}
                     </div>
                   )}
@@ -479,13 +479,34 @@ export default function Reduction() {
                       borderColor: tip.isApplied ? "#fecaca" : "#bbf7d0",
                     }}
                   >
-                    {tip.isApplied ? "Annuler" : "Appliquer"}
+                    {tip.isApplied ? "Retirer" : "M'engager"}
                   </button>
                 </fetcher.Form>
               </div>
             ))}
           </div>
         )}
+      </div>
+
+      {/* Legal disclaimer */}
+      <div style={{
+        background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 12,
+        padding: "14px 20px", marginTop: 20,
+        display: "flex", alignItems: "flex-start", gap: 10,
+      }}>
+        <span style={{ fontSize: 16, flexShrink: 0 }}>⚠️</span>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "#92400e", marginBottom: 4 }}>
+            Avertissement — Estimations non vérifiées
+          </div>
+          <div style={{ fontSize: 11, color: "#a16207", lineHeight: 1.5 }}>
+            Les économies affichées sont des <strong>estimations basées sur des moyennes sectorielles ADEME</strong>.
+            Elles ne constituent pas une mesure réelle de réduction. Les économies effectives dépendent
+            de la mise en œuvre concrète par le marchand. Conformément à la directive EU 2024/825 (EmpCo),
+            aucune claim environnementale ne doit être communiquée aux clients sans preuve vérifiable.
+            Le bouton "M'engager" enregistre une intention, pas une action vérifiée.
+          </div>
+        </div>
       </div>
 
       {/* Motivational section */}
@@ -508,7 +529,7 @@ export default function Reduction() {
               marginBottom: 8,
             }}
           >
-            Votre score de réduction : {progress.reductionScore}/100
+            Score d'engagement : {progress.reductionScore}/100
           </div>
           <div
             style={{

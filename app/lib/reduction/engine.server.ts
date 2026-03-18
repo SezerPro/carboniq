@@ -19,16 +19,16 @@ interface CategoryAnalysis {
 
 function analyzeByCategory(
   products: Array<{
-    category: string | null;
+    categoryCode: string | null;
     carbonScoreKg: number | null;
-    weightKg: number | null;
+    weightGrams: number | null;
     vendor: string | null;
   }>,
 ): CategoryAnalysis[] {
   const grouped = new Map<string, typeof products>();
 
   for (const p of products) {
-    const cat = p.category || "Autre";
+    const cat = p.categoryCode || "generic.default";
     if (!grouped.has(cat)) grouped.set(cat, []);
     grouped.get(cat)!.push(p);
   }
@@ -38,7 +38,7 @@ function analyzeByCategory(
     const scores = prods
       .map((p) => p.carbonScoreKg ?? 0)
       .filter((s) => s > 0);
-    const weights = prods.map((p) => p.weightKg ?? 0).filter((w) => w > 0);
+    const weights = prods.map((p) => (p.weightGrams ?? 0) / 1000).filter((w) => w > 0);
     const vendors = new Set(prods.map((p) => p.vendor).filter(Boolean));
 
     analyses.push({
@@ -67,9 +67,9 @@ export async function generateReductionTips(
   const products = await prisma.product.findMany({
     where: { shopId },
     select: {
-      category: true,
+      categoryCode: true,
       carbonScoreKg: true,
-      weightKg: true,
+      weightGrams: true,
       vendor: true,
     },
   });
@@ -184,7 +184,7 @@ export async function generateReductionTips(
   }
 
   // 4. Weight reduction
-  const heavyProducts = products.filter((p) => (p.weightKg ?? 0) > 2);
+  const heavyProducts = products.filter((p) => (p.weightGrams ?? 0) > 2000);
   if (heavyProducts.length > 3) {
     const heavyEmissions = heavyProducts.reduce(
       (sum, p) => sum + (p.carbonScoreKg ?? 0),

@@ -150,11 +150,18 @@ model Product {
   updatedAt         DateTime     @updatedAt
 
   // DPP (Digital Product Passport) fields
-  dppMaterials      String?
-  dppOriginCountry  String?
-  dppRecyclability  String?
-  dppQrCodeUrl      String?
-  dppGeneratedAt    DateTime?
+  dppMaterials        String?   // JSON array of {name, percentage, recycled, certified}
+  dppOriginCountry    String?
+  dppRecyclability    String?
+  dppQrCodeUrl        String?
+  dppGeneratedAt      DateTime?
+  dppDurabilityYears  Float?
+  dppCareInstructions String?
+  dppEndOfLife        String?
+  dppCertifications   String?   // JSON array of certification names
+  dppRepairabilityIdx Float?    // 0-10 score (electronics)
+  dppSparePartsYears  Int?      // spare parts availability (electronics)
+  dppEnergyClass      String?   // A-G (electronics/appliances)
 
   shop              Shop         @relation(fields: [shopId], references: [id], onDelete: Cascade)
   offsets           CarbonOffset[]

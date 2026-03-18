@@ -1,10 +1,9 @@
 {% comment %}
-  Carboniq — Carbon Score Badge
+  Carboniq — Carbon Score Badge (Premium)
   Fetches the CO₂ score from the app API and displays it as a badge.
 {% endcomment %}
 
 <div id="carboniq-badge-{{ product.id }}" class="carboniq-wrapper" style="display:none;">
-  <!-- Skeleton loader -->
   <div class="carboniq-skeleton">
     <div class="carboniq-skeleton-bar"></div>
   </div>
@@ -15,87 +14,32 @@
     margin: 8px 0;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
-
-  /* Skeleton */
-  .carboniq-skeleton {
-    display: inline-block;
-  }
+  .carboniq-skeleton { display: inline-block; }
   .carboniq-skeleton-bar {
-    width: 140px;
-    height: 28px;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    width: 150px; height: 32px;
+    background: linear-gradient(90deg, #f3f1ee 25%, #e9e5df 50%, #f3f1ee 75%);
     background-size: 200% 100%;
-    animation: carboniq-shimmer 1.5s infinite;
-    border-radius: 14px;
+    animation: cq-shimmer 1.5s infinite;
+    border-radius: 999px;
   }
-  @keyframes carboniq-shimmer {
+  @keyframes cq-shimmer {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
   }
-
-  /* ── PILL style ── */
-  .carboniq-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 12px;
-    border-radius: 999px;
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 1.4;
+  @keyframes cq-float-leaf {
+    0%,100% { transform: translateY(0) rotate(-5deg); }
+    50%     { transform: translateY(-3px) rotate(5deg); }
   }
-  .carboniq-pill .carboniq-icon { font-size: 14px; }
-  .carboniq-pill .carboniq-score { font-weight: 400; opacity: 0.8; margin-left: 2px; }
-
-  /* ── LEAF style ── */
-  .carboniq-leaf {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
-    border-radius: 12px;
-    font-size: 13px;
-    font-weight: 600;
-    border-left: 4px solid;
+  @keyframes cq-pulse-dot {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50%     { opacity: 0.6; transform: scale(0.85); }
   }
-  .carboniq-leaf .carboniq-icon { font-size: 16px; }
-
-  /* ── MINIMAL style ── */
-  .carboniq-minimal {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 12px;
-    font-weight: 500;
-    opacity: 0.85;
+  @keyframes cq-fade-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
-  .carboniq-minimal .carboniq-icon { font-size: 13px; }
-
-  /* ── DETAILED style ── */
-  .carboniq-detailed {
-    display: inline-flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 10px 14px;
-    border-radius: 10px;
-    font-size: 13px;
-    border: 1px solid;
-  }
-  .carboniq-detailed-header {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-weight: 700;
-    font-size: 14px;
-  }
-  .carboniq-detailed-score {
-    font-size: 12px;
-    opacity: 0.7;
-  }
-  .carboniq-detailed-method {
-    font-size: 11px;
-    opacity: 0.5;
-    margin-top: 2px;
+  .carboniq-badge-anim {
+    animation: cq-fade-in 0.4s cubic-bezier(0,0,0.2,1) both;
   }
 </style>
 
@@ -107,61 +51,105 @@
     var shopDomain = '{{ shop.permanent_domain }}';
     var productId = '{{ product.id }}';
     var badgeStyle = '{{ block.settings.badge_style }}' || 'pill';
-    var showMethodology = {{ block.settings.show_methodology | json }};
-    // Use Shopify App Proxy — works in both dev and prod
     var proxyUrl = '/apps/carboniq/api/carbon-score';
 
-    // Show wrapper with skeleton
     wrapper.style.display = 'block';
 
     fetch(proxyUrl + '?shop=' + encodeURIComponent(shopDomain) + '&product_id=' + encodeURIComponent(productId))
       .then(function(res) { return res.json(); })
       .then(function(data) {
-        // Silent failure
         if (data.display === 'none' || !data.badge) {
           wrapper.style.display = 'none';
           return;
         }
 
-        var badge = data.badge;
         var score = data.carbonScoreKg;
+        var label = data.carbonLabel;
         var scoreText = score < 1 ? score.toFixed(2) : score.toFixed(1);
+
+        /* Color mapping */
+        var theme = {
+          LOW:       { color:'#2d6a1f', bg:'#f0fdf4', border:'#bbf7d0', glow:'rgba(45,106,31,0.12)', icon:'\uD83C\uDF3F', label:'Faible impact',       pct:15 },
+          MEDIUM:    { color:'#92400e', bg:'#fffbeb', border:'#fde68a', glow:'rgba(146,64,14,0.10)',  icon:'\uD83C\uDF43', label:'Impact mod\u00e9r\u00e9',     pct:40 },
+          HIGH:      { color:'#9a3412', bg:'#fff7ed', border:'#fed7aa', glow:'rgba(154,52,18,0.10)',  icon:'\u26A0\uFE0F', label:'Impact \u00e9lev\u00e9',       pct:70 },
+          VERY_HIGH: { color:'#991b1b', bg:'#fef2f2', border:'#fecaca', glow:'rgba(153,27,27,0.10)',  icon:'\uD83D\uDD34', label:'Impact tr\u00e8s \u00e9lev\u00e9', pct:95 }
+        };
+        var t = theme[label] || theme.MEDIUM;
         var html = '';
 
         if (badgeStyle === 'pill') {
-          html = '<div class="carboniq-pill" style="color:' + badge.color + ';background:' + badge.bgColor + ';">'
-            + '<span class="carboniq-icon">' + badge.icon + '</span>'
-            + '<span>' + badge.text + '</span>'
-            + '<span class="carboniq-score">' + scoreText + ' kg CO₂</span>'
-            + '</div>';
+          html = '<span class="carboniq-badge-anim" style="'
+            + 'display:inline-flex;align-items:center;gap:6px;'
+            + 'padding:6px 14px;border-radius:999px;'
+            + 'background:' + t.bg + ';border:1px solid ' + t.border + ';'
+            + 'color:' + t.color + ';'
+            + 'font-family:-apple-system,sans-serif;font-size:13px;font-weight:500;letter-spacing:-0.01em;'
+            + 'box-shadow:0 0 0 4px ' + t.glow + ';'
+            + '">'
+            + t.icon + ' ' + scoreText + ' kg CO\u2082e'
+            + '</span>';
         }
-        else if (badgeStyle === 'leaf') {
-          html = '<div class="carboniq-leaf" style="color:' + badge.color + ';background:' + badge.bgColor + ';border-left-color:' + badge.color + ';">'
-            + '<span class="carboniq-icon">' + badge.icon + '</span>'
-            + '<span>' + badge.text + ' — ' + scoreText + ' kg CO₂</span>'
-            + '</div>';
-        }
-        else if (badgeStyle === 'minimal') {
-          html = '<div class="carboniq-minimal" style="color:' + badge.color + ';">'
-            + '<span class="carboniq-icon">' + badge.icon + '</span>'
-            + '<span>' + scoreText + ' kg CO₂</span>'
-            + '</div>';
-        }
+
         else if (badgeStyle === 'detailed') {
-          html = '<div class="carboniq-detailed" style="color:' + badge.color + ';background:' + badge.bgColor + ';border-color:' + badge.color + ';">'
-            + '<div class="carboniq-detailed-header">'
-            + '<span class="carboniq-icon">' + badge.icon + '</span>'
-            + '<span>' + badge.text + '</span>'
+          html = '<div class="carboniq-badge-anim" style="'
+            + 'display:inline-flex;flex-direction:column;gap:4px;'
+            + 'padding:10px 14px;border-radius:12px;'
+            + 'background:' + t.bg + ';border:1px solid ' + t.border + ';'
+            + 'box-shadow:0 2px 8px ' + t.glow + ',0 0 0 1px ' + t.border + ';'
+            + 'font-family:-apple-system,sans-serif;max-width:220px;'
+            + '">'
+            /* Row 1: icon + label */
+            + '<div style="display:flex;align-items:center;gap:6px;">'
+            + '<span style="font-size:14px">' + t.icon + '</span>'
+            + '<span style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:' + t.color + ';opacity:0.8">' + t.label + '</span>'
             + '</div>'
-            + '<div class="carboniq-detailed-score">' + scoreText + ' kg CO₂ par produit</div>'
-            + (showMethodology ? '<div class="carboniq-detailed-method">Estimation basée sur la méthode ADEME / Base Carbone</div>' : '')
+            /* Row 2: big score */
+            + '<div style="display:flex;align-items:baseline;gap:4px;">'
+            + '<span style="font-size:26px;font-weight:700;letter-spacing:-0.04em;color:' + t.color + ';line-height:1;font-variant-numeric:tabular-nums">' + scoreText + '</span>'
+            + '<span style="font-size:11px;color:' + t.color + ';opacity:0.6;letter-spacing:-0.02em">kg CO\u2082e</span>'
+            + '</div>'
+            /* Row 3: progress bar */
+            + '<div style="height:3px;background:rgba(0,0,0,0.08);border-radius:999px;overflow:hidden;margin-top:2px">'
+            + '<div style="height:100%;width:' + t.pct + '%;background:' + t.color + ';border-radius:999px;opacity:0.7;transition:width 1s cubic-bezier(0.4,0,0.2,1)"></div>'
+            + '</div>'
+            /* Row 4: source */
+            + '<span style="font-size:10px;color:' + t.color + ';opacity:0.5;margin-top:1px">Donn\u00e9es ADEME</span>'
             + '</div>';
+        }
+
+        else if (badgeStyle === 'leaf') {
+          html = '<div class="carboniq-badge-anim" style="'
+            + 'display:inline-flex;align-items:center;gap:10px;'
+            + 'padding:8px 14px;border-radius:10px;'
+            + 'background:' + t.bg + ';border:1px solid ' + t.border + ';'
+            + 'font-family:-apple-system,sans-serif;'
+            + '">'
+            /* Icon box */
+            + '<div style="width:32px;height:32px;border-radius:8px;background:' + t.color + '14;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0">'
+            + '<span style="font-size:16px;animation:cq-float-leaf 3s ease-in-out infinite">\uD83C\uDF3F</span>'
+            + '</div>'
+            /* Text */
+            + '<div>'
+            + '<div style="font-size:15px;font-weight:700;color:' + t.color + ';letter-spacing:-0.03em;line-height:1.2;font-variant-numeric:tabular-nums">'
+            + scoreText + ' <span style="font-size:11px;font-weight:400;opacity:0.7">kg CO\u2082e</span></div>'
+            + '<div style="font-size:11px;color:' + t.color + ';opacity:0.7;margin-top:1px">' + t.label + '</div>'
+            + '</div>'
+            + '</div>';
+        }
+
+        else if (badgeStyle === 'minimal') {
+          html = '<span class="carboniq-badge-anim" style="'
+            + 'display:inline-flex;align-items:center;gap:6px;'
+            + 'font-family:-apple-system,sans-serif;font-size:12px;color:#6b7280;'
+            + '">'
+            + '<span style="width:7px;height:7px;border-radius:50%;background:' + t.color + ';box-shadow:0 0 6px ' + t.glow + ';display:inline-block;animation:cq-pulse-dot 2s ease-in-out infinite"></span>'
+            + scoreText + ' kg CO\u2082e \u00b7 ' + t.label
+            + '</span>';
         }
 
         wrapper.innerHTML = html;
       })
       .catch(function() {
-        // Silent failure — hide the badge
         wrapper.style.display = 'none';
       });
   })();

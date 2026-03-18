@@ -143,16 +143,17 @@ function getRecyclabilityInfo(category: string): {
 export async function generateDPP(productId: string): Promise<DPPData> {
   const product = await prisma.product.findUniqueOrThrow({
     where: { id: productId },
-    include: {
-      emissionFactor: true,
-      shop: true,
-    },
+    include: { shop: true },
   });
 
-  const category = product.category || "Produit général";
+  // Fetch emission factor separately via categoryCode
+  const factor = product.categoryCode
+    ? await prisma.emissionFactor.findUnique({ where: { code: product.categoryCode } })
+    : null;
+
+  const category = product.categoryCode || "generic.default";
   const carbonScoreKg = product.carbonScoreKg ?? 0;
 
-  // Build materials from DPP fields or estimate from category
   let materials: Array<{ name: string; percentage: number; recycled: boolean }>;
   let materialsSource: "declared" | "estimated";
 
@@ -172,13 +173,10 @@ export async function generateDPP(productId: string): Promise<DPPData> {
   const originCountry = product.dppOriginCountry || "Non spécifié";
   const recyclability =
     product.dppRecyclability
-      ? {
-          score: product.dppRecyclability,
-          instructions: "Consultez les consignes locales.",
-        }
+      ? { score: product.dppRecyclability, instructions: "Consultez les consignes locales." }
       : getRecyclabilityInfo(category);
 
-  const shopDomain = product.shop?.shopifyDomain || "shop";
+  const shopDomain = product.shop?.shopDomain || "shop";
   const qrCodeUrl = `/api/dpp/${product.id}?shop=${encodeURIComponent(shopDomain)}`;
 
   const dppData: DPPData = {
@@ -191,13 +189,10 @@ export async function generateDPP(productId: string): Promise<DPPData> {
     environmentalFootprint: {
       carbonScoreKg,
       carbonLabel: getCarbonLabel(carbonScoreKg),
-      methodology: product.emissionFactor?.methodology || "ADEME Base Carbone",
-      calculatedAt: product.scoredAt?.toISOString() || new Date().toISOString(),
+      methodology: (factor?.source ?? "ADEME") + " / Base Carbone",
+      calculatedAt: product.calculatedAt?.toISOString() || new Date().toISOString(),
     },
-    materialsComposition: {
-      materials,
-      source: materialsSource,
-    },
+    materialsComposition: { materials, source: materialsSource },
     origin: {
       country: originCountry,
       countryCode: originCountry.substring(0, 2).toUpperCase(),
@@ -212,13 +207,9 @@ export async function generateDPP(productId: string): Promise<DPPData> {
     generatedAt: new Date().toISOString(),
   };
 
-  // Update product with DPP fields
   await prisma.product.update({
     where: { id: productId },
-    data: {
-      dppGeneratedAt: new Date(),
-      dppQrCodeUrl: qrCodeUrl,
-    },
+    data: { dppGeneratedAt: new Date(), dppQrCodeUrl: qrCodeUrl },
   });
 
   return dppData;
@@ -257,17 +248,18 @@ export async function getDPPData(
   const product = await prisma.product.findFirst({
     where: {
       id: productId,
-      shop: { shopifyDomain: shopDomain },
+      shop: { shopDomain },
     },
-    include: {
-      emissionFactor: true,
-      shop: true,
-    },
+    include: { shop: true },
   });
 
   if (!product) return null;
 
-  const category = product.category || "Produit général";
+  const factor = product.categoryCode
+    ? await prisma.emissionFactor.findUnique({ where: { code: product.categoryCode } })
+    : null;
+
+  const category = product.categoryCode || "generic.default";
   const carbonScoreKg = product.carbonScoreKg ?? 0;
 
   let materials: Array<{ name: string; percentage: number; recycled: boolean }>;
@@ -289,10 +281,7 @@ export async function getDPPData(
   const originCountry = product.dppOriginCountry || "Non spécifié";
   const recyclability =
     product.dppRecyclability
-      ? {
-          score: product.dppRecyclability,
-          instructions: "Consultez les consignes locales.",
-        }
+      ? { score: product.dppRecyclability, instructions: "Consultez les consignes locales." }
       : getRecyclabilityInfo(category);
 
   return {
@@ -305,13 +294,10 @@ export async function getDPPData(
     environmentalFootprint: {
       carbonScoreKg,
       carbonLabel: getCarbonLabel(carbonScoreKg),
-      methodology: product.emissionFactor?.methodology || "ADEME Base Carbone",
-      calculatedAt: product.scoredAt?.toISOString() || new Date().toISOString(),
+      methodology: (factor?.source ?? "ADEME") + " / Base Carbone",
+      calculatedAt: product.calculatedAt?.toISOString() || new Date().toISOString(),
     },
-    materialsComposition: {
-      materials,
-      source: materialsSource,
-    },
+    materialsComposition: { materials, source: materialsSource },
     origin: {
       country: originCountry,
       countryCode: originCountry.substring(0, 2).toUpperCase(),
@@ -323,7 +309,6 @@ export async function getDPPData(
       version: "1.0",
     },
     qrCodeUrl: product.dppQrCodeUrl || "",
-    generatedAt:
-      product.dppGeneratedAt?.toISOString() || new Date().toISOString(),
+    generatedAt: product.dppGeneratedAt?.toISOString() || new Date().toISOString(),
   };
 }
