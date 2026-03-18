@@ -25,6 +25,7 @@ export default function App() {
         <s-link href="/app/reports">Rapports RSE</s-link>
         <s-link href="/app/compliance">Conformité EU</s-link>
         <s-link href="/app/settings">Paramètres</s-link>
+        <s-link href="/app/pricing">Plans & Tarifs</s-link>
       </s-app-nav>
       <Outlet />
     </AppProvider>

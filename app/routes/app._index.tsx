@@ -12,6 +12,8 @@ import db from "../db.server";
 import { calculateAndSave } from "../lib/carbon/engine.server";
 import { seedEmissionFactors } from "../lib/carbon/seed.server";
 import { T, IMPACT, S } from "../lib/design/tokens";
+import { hasAccess, FEATURES, type PlanTier } from "../lib/plans/constants";
+import { getPlanTier } from "../lib/plans/gates.server";
 
 // ── Loader ─────────────────────────────────────────────
 
@@ -71,6 +73,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       calculatedAt: p.calculatedAt?.toISOString() ?? null,
     })),
     subscription: shop.subscription,
+    planTier: getPlanTier(shop.plan, shop.planStatus),
   };
 };
 
@@ -252,17 +255,18 @@ const CSS = `
 `;
 
 const MODULES = [
-  { icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>', color: "#4a8a32", bg: "#f0fdf4", t: "Analytiques", d: "Tendances", r: "/app/analytics" },
-  { icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 008 20C19 20 22 3 22 3c-1 2-8 9-8 9z"/></svg>', color: "#4a8a32", bg: "#f0fdf4", t: "Réduire", d: "Conseils IA", r: "/app/reduction" },
-  { icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>', color: "#3b82f6", bg: "#eff6ff", t: "DPP", d: "Passeport EU", r: "/app/dpp" },
-  { icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>', color: "#7c3aed", bg: "#faf5ff", t: "Rapports", d: "RSE / CSRD", r: "/app/reports" },
-  { icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>', color: "#059669", bg: "#ecfdf5", t: "Conformité", d: "Green Claims", r: "/app/compliance" },
-  { icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>', color: "#d97706", bg: "#fffbeb", t: "A/B Test", d: "Optimiser", r: "/app/abtest" },
-  { icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>', color: "#b45309", bg: "#fef9c3", t: "ROI", d: "Performance", r: "/app/roi" },
-  { icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>', color: "#0369a1", bg: "#f0f9ff", t: "Benchmark", d: "Secteur", r: "/app/benchmark" },
-  { icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>', color: "#6d28d9", bg: "#fdf4ff", t: "Scope 3", d: "Supply chain", r: "/app/scope3" },
-  { icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>', color: "#0d9488", bg: "#f0fdfa", t: "Impact", d: "Portail public", r: "/app/impact" },
-  { icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>', color: "#64748b", bg: "#f8fafc", t: "Paramètres", d: "Config", r: "/app/settings" },
+  { icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>', color: "#4a8a32", bg: "#f0fdf4", t: "Analytiques", d: "Tendances", r: "/app/analytics", gate: "analytics" as const },
+  { icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 008 20C19 20 22 3 22 3c-1 2-8 9-8 9z"/></svg>', color: "#4a8a32", bg: "#f0fdf4", t: "Réduire", d: "Conseils IA", r: "/app/reduction", gate: "reduction_basic" as const },
+  { icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>', color: "#3b82f6", bg: "#eff6ff", t: "DPP", d: "Passeport EU", r: "/app/dpp", gate: "dpp" as const },
+  { icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>', color: "#7c3aed", bg: "#faf5ff", t: "Rapports", d: "RSE / CSRD", r: "/app/reports", gate: "reports_monthly" as const },
+  { icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>', color: "#059669", bg: "#ecfdf5", t: "Conformité", d: "Green Claims", r: "/app/compliance", gate: "compliance" as const },
+  { icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>', color: "#d97706", bg: "#fffbeb", t: "A/B Test", d: "Optimiser", r: "/app/abtest", gate: "abtest" as const },
+  { icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>', color: "#b45309", bg: "#fef9c3", t: "ROI", d: "Performance", r: "/app/roi", gate: "roi" as const },
+  { icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>', color: "#0369a1", bg: "#f0f9ff", t: "Benchmark", d: "Secteur", r: "/app/benchmark", gate: "benchmark" as const },
+  { icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>', color: "#6d28d9", bg: "#fdf4ff", t: "Scope 3", d: "Supply chain", r: "/app/scope3", gate: "scope3" as const },
+  { icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>', color: "#0d9488", bg: "#f0fdfa", t: "Impact", d: "Portail public", r: "/app/impact", gate: "impact_portal" as const },
+  { icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>', color: "#64748b", bg: "#f8fafc", t: "Paramètres", d: "Config", r: "/app/settings", gate: "settings" as const },
+  { icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>', color: "#4a8a32", bg: "#f0fdf4", t: "Plans", d: "Tarification", r: "/app/pricing", gate: "dashboard" as const },
 ];
 
 const PILLS: Record<string, { cls: string; icon: string; text: string }> = {
@@ -280,7 +284,8 @@ const LABEL_COLORS: Record<string, { color: string; bg: string; accent: string }
 };
 
 export default function Index() {
-  const { stats, products, subscription } = useLoaderData<typeof loader>();
+  const { stats, products, subscription, planTier } = useLoaderData<typeof loader>();
+  const plan = (planTier ?? "FREE") as PlanTier;
   const fetcher = useFetcher<typeof action>();
   const shopify = useAppBridge();
 
@@ -437,13 +442,25 @@ export default function Index() {
 
         {/* ── ROW 3 — Modules ── */}
         <div className="cq-mods">
-          {MODULES.map((m, i) => (
-            <div key={i} className="cq-mod" onClick={() => navigate(m.r)} role="button" tabIndex={0}>
-              <div className="cq-mod-icon" style={{ background: m.bg, color: m.color }} dangerouslySetInnerHTML={{ __html: m.icon }} />
-              <div className="cq-mod-t">{m.t}</div>
-              <div className="cq-mod-d">{m.d}</div>
-            </div>
-          ))}
+          {MODULES.map((m, i) => {
+            const feature = FEATURES[m.gate];
+            const locked = feature ? !hasAccess(plan, feature.requiredPlan) : false;
+            return (
+              <div key={i} className="cq-mod" onClick={() => navigate(locked ? "/app/pricing" : m.r)} role="button" tabIndex={0}
+                style={locked ? { opacity: 0.6 } : undefined}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div className="cq-mod-icon" style={{ background: m.bg, color: m.color }} dangerouslySetInnerHTML={{ __html: m.icon }} />
+                  {locked && (
+                    <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: "#fef3c7", color: "#92400e", border: "1px solid #fde68a", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                      {feature!.requiredPlan}
+                    </span>
+                  )}
+                </div>
+                <div className="cq-mod-t">{locked ? "🔒 " : ""}{m.t}</div>
+                <div className="cq-mod-d">{locked ? "Upgrade requis" : m.d}</div>
+              </div>
+            );
+          })}
         </div>
 
         {/* ── Separator ── */}
