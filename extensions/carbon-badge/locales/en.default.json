@@ -1,0 +1,13 @@
+{
+  "carbon_badge": {
+    "name": "Carboniq - CO₂ Score",
+    "settings": {
+      "badge_style": {
+        "label": "Badge style"
+      },
+      "show_methodology": {
+        "label": "Show methodology source"
+      }
+    }
+  }
+}

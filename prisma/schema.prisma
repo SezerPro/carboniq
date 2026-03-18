@@ -13,6 +13,55 @@ datasource db {
   url      = "file:dev.sqlite"
 }
 
+// ── Enums ──────────────────────────────────────────────
+
+enum Plan {
+  STARTER
+  GROWTH
+  SCALE
+}
+
+enum PlanStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+enum CarbonLabel {
+  LOW
+  MEDIUM
+  HIGH
+  VERY_HIGH
+}
+
+enum BadgeStyle {
+  PILL
+  LEAF
+  MINIMAL
+  DETAILED
+}
+
+enum OffsetStatus {
+  PENDING
+  COMPLETED
+  REFUNDED
+}
+
+enum ImpactType {
+  CARBON
+  TREE
+  OCEAN
+}
+
+enum ReportPeriod {
+  MONTHLY
+  QUARTERLY
+  ANNUAL
+}
+
+// ── Tables ─────────────────────────────────────────────
+
 model Session {
   id            String    @id
   shop          String
@@ -31,4 +80,313 @@ model Session {
   emailVerified Boolean?  @default(false)
   refreshToken        String?
   refreshTokenExpires DateTime?
+}
+
+model Shop {
+  id             String       @id @default(cuid())
+  shopDomain     String       @unique
+  accessToken    String
+  email          String?
+  name           String?
+  plan           Plan         @default(STARTER)
+  planStatus     PlanStatus   @default(TRIALING)
+  trialEndsAt    DateTime?
+  badgeStyle     BadgeStyle   @default(PILL)
+  badgeColor     String       @default("#22c55e")
+  badgePosition  String       @default("below_price")
+  showLabel      Boolean      @default(true)
+  installedAt    DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  // Widget settings
+  showComparison    Boolean    @default(true)
+  showSocialProof   Boolean    @default(true)
+  comparisonStyle   String     @default("car_km")
+
+  // Multi-impact settings
+  enableTrees       Boolean    @default(false)
+  enableOcean       Boolean    @default(false)
+  treeCostEur       Float      @default(0.40)
+  oceanCostEur      Float      @default(0.05)
+  carbonCostEur     Float      @default(0.01)
+
+  // Offset checkout settings
+  enableOffset      Boolean    @default(true)
+  offsetMarkupPct   Float      @default(0)
+
+  // Klaviyo integration
+  klaviyoApiKey      String?
+  klaviyoListId      String?
+
+  products           Product[]
+  subscription       Subscription?
+  offsets            CarbonOffset[]
+  certificates       Certificate[]
+  impactActions      ImpactAction[]
+  reports            RSEReport[]
+  reductionTips      ReductionTip[]
+  monthlySnapshots   MonthlySnapshot[]
+  abTests            ABTest[]
+  complianceScans    ComplianceScan[]
+  scope3Entries      Scope3Entry[]
+}
+
+model Product {
+  id                String       @id @default(cuid())
+  shopId            String
+  shopifyProductId  String
+  title             String
+  productType       String?
+  tags              String?
+  vendor            String?
+  weightGrams       Float?
+  categoryCode      String?
+  carbonScoreKg     Float?
+  carbonLabel       CarbonLabel?
+  confidence        Float?
+  isManualOverride  Boolean      @default(false)
+  calculatedAt      DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  // DPP (Digital Product Passport) fields
+  dppMaterials      String?
+  dppOriginCountry  String?
+  dppRecyclability  String?
+  dppQrCodeUrl      String?
+  dppGeneratedAt    DateTime?
+
+  shop              Shop         @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  offsets           CarbonOffset[]
+
+  @@unique([shopId, shopifyProductId])
+  @@index([shopId])
+}
+
+model EmissionFactor {
+  id              String  @id @default(cuid())
+  code            String  @unique
+  category        String
+  subcategory     String
+  labelFr         String
+  labelEn         String
+  kgCo2PerKg      Float?
+  kgCo2PerUnit    Float?
+  defaultWeightG  Float?
+  thresholdLow    Float
+  thresholdMed    Float
+  thresholdHigh   Float
+  source          String
+  confidence      Float   @default(0.7)
+  keywords        String  @default("[]")
+  updatedAt       DateTime @updatedAt
+}
+
+model Subscription {
+  id                 String    @id @default(cuid())
+  shopId             String    @unique
+  plan               Plan      @default(STARTER)
+  status             PlanStatus @default(TRIALING)
+  shopifyChargeId    String?
+  productLimit       Int       @default(50)
+  productsUsed       Int       @default(0)
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  cancelAtPeriodEnd  Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  shop               Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+}
+
+// ── Offset at checkout ─────────────────────────────────
+
+model CarbonOffset {
+  id              String       @id @default(cuid())
+  shopId          String
+  productId       String?
+  orderId         String
+  orderName       String?
+  customerEmail   String?
+  carbonKg        Float
+  amountEur       Float
+  status          OffsetStatus @default(PENDING)
+  offsetProvider  String       @default("internal")
+  providerRef     String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  shop            Shop         @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  product         Product?     @relation(fields: [productId], references: [id], onDelete: SetNull)
+  certificate     Certificate?
+
+  @@index([shopId])
+  @@index([orderId])
+}
+
+// ── Impact certificates ────────────────────────────────
+
+model Certificate {
+  id              String   @id @default(cuid())
+  shopId          String
+  offsetId        String   @unique
+  customerEmail   String
+  customerName    String?
+  orderName       String
+  carbonKg        Float
+  treesPlanted    Float    @default(0)
+  oceanKg         Float    @default(0)
+  uniqueCode      String   @unique
+  qrCodeUrl       String?
+  pdfUrl          String?
+  sentAt          DateTime?
+  createdAt       DateTime @default(now())
+
+  shop            Shop         @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  offset          CarbonOffset @relation(fields: [offsetId], references: [id], onDelete: Cascade)
+
+  @@index([shopId])
+  @@index([uniqueCode])
+}
+
+// ── Multi-impact tracking ──────────────────────────────
+
+model ImpactAction {
+  id            String     @id @default(cuid())
+  shopId        String
+  type          ImpactType
+  quantity      Float
+  costEur       Float
+  orderId       String?
+  providerRef   String?
+  createdAt     DateTime   @default(now())
+
+  shop          Shop       @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@index([shopId])
+  @@index([shopId, type])
+}
+
+// ── Monthly snapshots for analytics ────────────────────
+
+model MonthlySnapshot {
+  id                String   @id @default(cuid())
+  shopId            String
+  month             String
+  totalProducts     Int      @default(0)
+  totalCarbonKg     Float    @default(0)
+  avgCarbonKg       Float    @default(0)
+  countLow          Int      @default(0)
+  countMedium       Int      @default(0)
+  countHigh         Int      @default(0)
+  countVeryHigh     Int      @default(0)
+  totalOffsetKg     Float    @default(0)
+  totalTreesPlanted Float    @default(0)
+  totalOceanKg      Float    @default(0)
+  totalOffsetEur    Float    @default(0)
+  createdAt         DateTime @default(now())
+
+  shop              Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@unique([shopId, month])
+  @@index([shopId])
+}
+
+// ── Reduction tips ─────────────────────────────────────
+
+model ReductionTip {
+  id              String   @id @default(cuid())
+  shopId          String
+  category        String
+  title           String
+  description     String
+  potentialSaving    Float
+  potentialSavingPct Float?
+  isApplied          Boolean  @default(false)
+  appliedAt       DateTime?
+  createdAt       DateTime @default(now())
+
+  shop            Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@index([shopId])
+}
+
+// ── RSE Reports ────────────────────────────────────────
+
+model RSEReport {
+  id            String       @id @default(cuid())
+  shopId        String
+  period        ReportPeriod
+  periodStart   DateTime
+  periodEnd     DateTime
+  dataJson      String
+  pdfUrl        String?
+  generatedAt   DateTime     @default(now())
+
+  shop          Shop         @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@index([shopId])
+}
+
+// ── A/B Testing ────────────────────────────────────────
+
+model ABTest {
+  id            String    @id @default(cuid())
+  shopId        String
+  name          String
+  testType      String    // badge_style, offset_placement, messaging, equivalence
+  variantA      String    // JSON config for variant A
+  variantB      String    // JSON config for variant B
+  isActive      Boolean   @default(true)
+  trafficSplit  Float     @default(0.5) // % of traffic to variant B
+  startedAt     DateTime  @default(now())
+  endedAt       DateTime?
+  winnerVariant String?   // "A" or "B"
+
+  // Results
+  impressionsA  Int       @default(0)
+  impressionsB  Int       @default(0)
+  conversionsA  Int       @default(0)
+  conversionsB  Int       @default(0)
+  revenueA      Float     @default(0)
+  revenueB      Float     @default(0)
+
+  shop          Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@index([shopId])
+  @@index([shopId, isActive])
+}
+
+// ── EU Compliance ──────────────────────────────────────
+
+model ComplianceScan {
+  id            String    @id @default(cuid())
+  shopId        String
+  scannedAt     DateTime  @default(now())
+  totalPages    Int       @default(0)
+  totalIssues   Int       @default(0)
+  status        String    @default("completed") // running, completed, failed
+  findings      String    @default("[]") // JSON array of findings
+
+  shop          Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@index([shopId])
+}
+
+// ── Scope 3 Emissions ──────────────────────────────────
+
+model Scope3Entry {
+  id            String   @id @default(cuid())
+  shopId        String
+  category      String   // upstream_transport, downstream_delivery, packaging, energy, end_of_life
+  source        String   // description of data source
+  emissionKg    Float
+  period        String   // YYYY-MM
+  dataJson      String?  // raw data / calculation details
+  createdAt     DateTime @default(now())
+
+  shop          Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@index([shopId])
+  @@index([shopId, category])
 }

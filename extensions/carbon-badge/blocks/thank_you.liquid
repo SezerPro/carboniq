@@ -1,0 +1,346 @@
+{% comment %}
+  Carboniq — Thank-You Page Impact Summary
+  Displays post-purchase impact stats with animated counters.
+{% endcomment %}
+
+<div id="carboniq-thankyou" class="carboniq-ty-wrapper" style="display:none;">
+  <!-- Skeleton loader -->
+  <div class="carboniq-ty-skeleton">
+    <div class="carboniq-ty-skeleton-heading"></div>
+    <div class="carboniq-ty-skeleton-counters">
+      <div class="carboniq-ty-skeleton-counter"></div>
+      <div class="carboniq-ty-skeleton-counter"></div>
+      <div class="carboniq-ty-skeleton-counter"></div>
+    </div>
+    <div class="carboniq-ty-skeleton-text"></div>
+  </div>
+</div>
+
+<style>
+  .carboniq-ty-wrapper {
+    margin: 20px 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  /* ── Skeleton ── */
+  .carboniq-ty-skeleton {
+    padding: 28px;
+    border-radius: 16px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+  }
+  .carboniq-ty-skeleton-heading {
+    width: 260px;
+    height: 24px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: carboniq-ty-shimmer 1.5s infinite;
+    border-radius: 8px;
+    margin: 0 auto 20px;
+  }
+  .carboniq-ty-skeleton-counters {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+  .carboniq-ty-skeleton-counter {
+    width: 120px;
+    height: 80px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: carboniq-ty-shimmer 1.5s infinite;
+    border-radius: 12px;
+  }
+  .carboniq-ty-skeleton-text {
+    width: 200px;
+    height: 14px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: carboniq-ty-shimmer 1.5s infinite;
+    border-radius: 6px;
+    margin: 0 auto;
+  }
+  @keyframes carboniq-ty-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* ── Impact card ── */
+  .carboniq-ty-card {
+    border-radius: 16px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 40%, #ffffff 100%);
+    border: 1px solid #bbf7d0;
+    box-shadow: 0 4px 24px rgba(22, 163, 74, 0.08);
+  }
+  .carboniq-ty-header {
+    padding: 28px 28px 0;
+    text-align: center;
+  }
+  .carboniq-ty-icon {
+    font-size: 36px;
+    margin-bottom: 8px;
+    display: block;
+  }
+  .carboniq-ty-heading {
+    font-size: 22px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 4px;
+    line-height: 1.3;
+  }
+  .carboniq-ty-subheading {
+    font-size: 13px;
+    color: #6b7280;
+    margin: 0;
+  }
+
+  /* ── Counters ── */
+  .carboniq-ty-counters {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    padding: 24px 28px;
+    flex-wrap: wrap;
+  }
+  .carboniq-ty-counter {
+    flex: 1;
+    min-width: 100px;
+    max-width: 160px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 12px;
+    padding: 16px 12px;
+    text-align: center;
+    border: 1px solid #dcfce7;
+    backdrop-filter: blur(4px);
+  }
+  .carboniq-ty-counter-icon {
+    font-size: 24px;
+    display: block;
+    margin-bottom: 6px;
+  }
+  .carboniq-ty-counter-value {
+    font-size: 26px;
+    font-weight: 800;
+    color: #16a34a;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+    display: block;
+  }
+  .carboniq-ty-counter-label {
+    font-size: 11px;
+    color: #6b7280;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    display: block;
+    margin-top: 4px;
+  }
+
+  /* ── Counter animation ── */
+  .carboniq-ty-counter-value[data-animate] {
+    animation: carboniq-ty-countup 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  @keyframes carboniq-ty-countup {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .carboniq-ty-counter:nth-child(1) .carboniq-ty-counter-value { animation-delay: 0.1s; }
+  .carboniq-ty-counter:nth-child(2) .carboniq-ty-counter-value { animation-delay: 0.3s; }
+  .carboniq-ty-counter:nth-child(3) .carboniq-ty-counter-value { animation-delay: 0.5s; }
+
+  /* ── Footer ── */
+  .carboniq-ty-footer {
+    padding: 0 28px 28px;
+    text-align: center;
+  }
+  .carboniq-ty-message {
+    font-size: 14px;
+    color: #374151;
+    margin: 0 0 16px;
+    line-height: 1.5;
+  }
+  .carboniq-ty-message strong {
+    color: #16a34a;
+  }
+  .carboniq-ty-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #16a34a, #15803d);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 12px rgba(22, 163, 74, 0.25);
+  }
+  .carboniq-ty-cta:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(22, 163, 74, 0.35);
+  }
+  .carboniq-ty-powered {
+    margin-top: 16px;
+    font-size: 11px;
+    color: #9ca3af;
+  }
+  .carboniq-ty-powered a {
+    color: #16a34a;
+    text-decoration: none;
+    font-weight: 500;
+  }
+</style>
+
+<script>
+  (function() {
+    var wrapper = document.getElementById('carboniq-thankyou');
+    if (!wrapper) return;
+
+    var shopDomain = '{{ shop.permanent_domain }}';
+    var showCounters = {{ block.settings.show_counters | json }};
+    var showCta = {{ block.settings.show_cta | json }};
+    var appUrl = 'https://{{ shop.metafields.carboniq.app_url | default: request.host }}';
+
+    // Show wrapper with skeleton
+    wrapper.style.display = 'block';
+
+    fetch(appUrl + '/api/impact-stats?shop=' + encodeURIComponent(shopDomain))
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        // Silent failure
+        if (data.display === 'none') {
+          wrapper.style.display = 'none';
+          return;
+        }
+
+        var carbon = data.totalCarbonOffsetKg || 0;
+        var trees = data.treesPlanted || 0;
+        var ocean = data.oceanPlasticRemovedKg || 0;
+
+        var html = '<div class="carboniq-ty-card">';
+
+        // Header
+        html += '<div class="carboniq-ty-header">';
+        html += '<span class="carboniq-ty-icon">&#127793;</span>';
+        html += '<h3 class="carboniq-ty-heading">Merci pour votre commande !</h3>';
+        html += '<p class="carboniq-ty-subheading">Ensemble, nous faisons la diff&eacute;rence pour la plan&egrave;te</p>';
+        html += '</div>';
+
+        // Counters
+        if (showCounters) {
+          html += '<div class="carboniq-ty-counters">';
+
+          if (carbon > 0) {
+            html += '<div class="carboniq-ty-counter">';
+            html += '<span class="carboniq-ty-counter-icon">&#9968;&#65039;</span>';
+            html += '<span class="carboniq-ty-counter-value" data-animate data-target="' + carbon + '" data-suffix=" kg">' + formatNum(carbon) + ' kg</span>';
+            html += '<span class="carboniq-ty-counter-label">CO&#8322; compens&eacute;</span>';
+            html += '</div>';
+          }
+
+          if (trees > 0) {
+            html += '<div class="carboniq-ty-counter">';
+            html += '<span class="carboniq-ty-counter-icon">&#127795;</span>';
+            html += '<span class="carboniq-ty-counter-value" data-animate data-target="' + trees + '" data-suffix="">' + Math.round(trees) + '</span>';
+            html += '<span class="carboniq-ty-counter-label">Arbres plant&eacute;s</span>';
+            html += '</div>';
+          }
+
+          if (ocean > 0) {
+            html += '<div class="carboniq-ty-counter">';
+            html += '<span class="carboniq-ty-counter-icon">&#127754;</span>';
+            html += '<span class="carboniq-ty-counter-value" data-animate data-target="' + ocean + '" data-suffix=" kg">' + formatNum(ocean) + ' kg</span>';
+            html += '<span class="carboniq-ty-counter-label">Plastique oc&eacute;an</span>';
+            html += '</div>';
+          }
+
+          html += '</div>';
+        }
+
+        // Footer
+        html += '<div class="carboniq-ty-footer">';
+        html += '<p class="carboniq-ty-message">Votre commande contribue &agrave; un avenir <strong>plus vert</strong>. '
+          + 'Chaque achat soutient des projets de compensation carbone, de reforestation et de nettoyage des oc&eacute;ans.</p>';
+
+        if (showCta) {
+          html += '<a href="/pages/impact" class="carboniq-ty-cta">';
+          html += '&#127793; Doublez votre impact';
+          html += '</a>';
+        }
+
+        html += '<div class="carboniq-ty-powered">Propuls&eacute; par <a href="https://carboniq.app" target="_blank" rel="noopener">Carboniq</a></div>';
+        html += '</div>';
+
+        html += '</div>';
+
+        wrapper.innerHTML = html;
+
+        // Animate counters
+        if (showCounters) {
+          animateCounters();
+        }
+      })
+      .catch(function() {
+        // Silent failure — hide the block
+        wrapper.style.display = 'none';
+      });
+
+    function formatNum(n) {
+      if (n < 1) return n.toFixed(2);
+      if (n < 10) return n.toFixed(1);
+      return Math.round(n).toString();
+    }
+
+    function animateCounters() {
+      var counters = wrapper.querySelectorAll('.carboniq-ty-counter-value[data-target]');
+      counters.forEach(function(el) {
+        var target = parseFloat(el.getAttribute('data-target'));
+        var suffix = el.getAttribute('data-suffix') || '';
+        var duration = 1200;
+        var start = 0;
+        var startTime = null;
+
+        function step(timestamp) {
+          if (!startTime) startTime = timestamp;
+          var progress = Math.min((timestamp - startTime) / duration, 1);
+          // Ease out cubic
+          var eased = 1 - Math.pow(1 - progress, 3);
+          var current = start + (target - start) * eased;
+          el.textContent = formatNum(current) + suffix;
+          if (progress < 1) {
+            requestAnimationFrame(step);
+          }
+        }
+        requestAnimationFrame(step);
+      });
+    }
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Carboniq - Merci",
+  "target": "section",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show_counters",
+      "label": "Afficher les compteurs animés",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_cta",
+      "label": "Afficher le bouton d'action",
+      "default": true
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,13 @@
+api_version = "2025-04"
+
+[[extensions]]
+name = "Carboniq - Offset Checkout"
+handle = "carbon-checkout"
+
+uid = "06b024b1-6d63-d6be-c5dd-30f5f088f50bc672bb07"
+
+type = "ui_extension"
+
+  [[extensions.targeting]]
+  module = "./src/Checkout.tsx"
+  target = "purchase.checkout.block.render"

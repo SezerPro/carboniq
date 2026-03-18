@@ -1,0 +1,17 @@
+api_version = "2025-04"
+
+[[extensions]]
+name = "Carboniq - Score CO₂"
+handle = "carbon-badge"
+
+uid = "dcb70262-b66e-09b2-5336-032a2289cf1b3b052ee5"
+
+type = "theme"
+
+  [[extensions.targeting]]
+  module = "./blocks/carbon_badge.liquid"
+  target = "section"
+
+  [[extensions.targeting]]
+  module = "./blocks/thank_you.liquid"
+  target = "section"
