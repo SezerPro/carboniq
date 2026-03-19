@@ -3,16 +3,13 @@ import { useLoaderData, useNavigation, Form } from "react-router";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
-import { scanShopCompliance, getLatestScan, getCompliantTemplates } from "../lib/compliance/scanner.server";
+import { scanShopCompliance, getLatestScan, getCompliantTemplates, getScanHistory } from "../lib/compliance/scanner.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
 
-  const shop = await db.shop.findUnique({
-    where: { shopDomain: session.shop },
-  });
-
-  if (!shop) return { scan: null, templates: getCompliantTemplates() };
+  const shop = await db.shop.findUnique({ where: { shopDomain: session.shop } });
+  if (!shop) return { scan: null, templates: getCompliantTemplates(), history: [], score: 100 };
 
   const latestScan = await getLatestScan(shop.id);
   const scan = latestScan
@@ -24,7 +21,30 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       }
     : null;
 
-  return { scan, templates: getCompliantTemplates() };
+  // Scan history
+  const rawHistory = await getScanHistory(shop.id, 10);
+  const history = rawHistory.map((h) => ({
+    scannedAt: h.scannedAt.toISOString(),
+    totalPages: h.totalPages,
+    totalIssues: h.totalIssues,
+  }));
+
+  // Compliance score: 100% if 0 issues, decreases per issue severity
+  const findings = scan?.findings ?? [];
+  const criticalWeight = 25;
+  const highWeight = 15;
+  const mediumWeight = 5;
+  const lowWeight = 2;
+  const penalty = findings.reduce((sum: number, f: any) => {
+    if (f.severity === "critical") return sum + criticalWeight;
+    if (f.severity === "high") return sum + highWeight;
+    if (f.severity === "medium") return sum + mediumWeight;
+    if (f.severity === "low") return sum + lowWeight;
+    return sum;
+  }, 0);
+  const score = Math.max(0, Math.min(100, 100 - penalty));
+
+  return { scan, templates: getCompliantTemplates(), history, score };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -74,13 +94,13 @@ export default function Compliance() {
   const navigation = useNavigation();
   const isScanning = navigation.state === "submitting";
 
-  // Handle both loader data and action data
   const scan = (data as any)?.scan ?? null;
   const templates = (data as any)?.templates ?? [];
+  const history = (data as any)?.history ?? [];
+  const score = (data as any)?.score ?? 100;
 
   const findings = scan?.findings ?? [];
 
-  // Count by severity
   const counts = { critical: 0, high: 0, medium: 0, low: 0, info: 0 };
   for (const f of findings) {
     if (counts[f.severity as keyof typeof counts] !== undefined) {
@@ -88,68 +108,97 @@ export default function Compliance() {
     }
   }
 
+  // Countdown to September 2026
+  const deadline = new Date("2026-09-27T00:00:00Z");
+  const now = new Date();
+  const daysLeft = Math.max(0, Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+
+  // Score color
+  const scoreColor = score >= 90 ? "#16a34a" : score >= 70 ? "#d97706" : "#dc2626";
+  const scoreBg = score >= 90 ? "#dcfce7" : score >= 70 ? "#fef3c7" : "#fee2e2";
+
   return (
     <s-page heading="Conformite EU — Green Claims" backAction={{ url: "/app" }}>
-      {/* ── Directive info banner ── */}
-      <div style={{
-        ...card,
-        marginBottom: 20,
-        background: "linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%)",
-        border: "1px solid #bfdbfe",
-      }}>
-        <div style={{ padding: 20 }}>
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
-            <div style={{
-              width: 40, height: 40, borderRadius: 10,
-              background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 20, flexShrink: 0, color: "#fff",
-            }}>
-              !
+
+      {/* ── ROW 1: Countdown + Score ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 20 }}>
+        {/* Countdown */}
+        <div style={{ ...card, padding: 24, background: "linear-gradient(135deg, #1e293b, #334155)", border: "none", color: "#fff" }}>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(255,255,255,0.5)", marginBottom: 8 }}>
+            Directive EU EmpCo 2024/825
+          </div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+            <span style={{ fontSize: 48, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1 }}>{daysLeft}</span>
+            <span style={{ fontSize: 14, color: "rgba(255,255,255,0.6)" }}>jours restants</span>
+          </div>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 8 }}>
+            Entree en vigueur : 27 septembre 2026
+          </div>
+          {/* Progress bar */}
+          <div style={{ height: 4, background: "rgba(255,255,255,0.1)", borderRadius: 99, overflow: "hidden", marginTop: 12 }}>
+            <div style={{ height: "100%", width: `${Math.max(5, 100 - (daysLeft / 365) * 100)}%`, background: daysLeft > 180 ? "linear-gradient(90deg, #22c55e, #4ade80)" : daysLeft > 60 ? "linear-gradient(90deg, #f59e0b, #fbbf24)" : "linear-gradient(90deg, #ef4444, #f87171)", borderRadius: 99 }} />
+          </div>
+        </div>
+
+        {/* Score */}
+        <div style={{ ...card, padding: 24, display: "flex", alignItems: "center", gap: 20 }}>
+          {/* Circular score */}
+          <div style={{ position: "relative", width: 90, height: 90, flexShrink: 0 }}>
+            <svg width="90" height="90" viewBox="0 0 90 90">
+              <circle cx="45" cy="45" r="38" fill="none" stroke="#f3f4f6" strokeWidth="8" />
+              <circle cx="45" cy="45" r="38" fill="none" stroke={scoreColor} strokeWidth="8" strokeLinecap="round"
+                strokeDasharray={2 * Math.PI * 38} strokeDashoffset={2 * Math.PI * 38 * (1 - score / 100)}
+                transform="rotate(-90 45 45)" style={{ transition: "stroke-dashoffset 1s ease" }} />
+            </svg>
+            <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+              <span style={{ fontSize: 24, fontWeight: 800, color: scoreColor }}>{score}</span>
+              <span style={{ fontSize: 9, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em" }}>/ 100</span>
             </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: "#1e3a5f", marginBottom: 6 }}>
-                Directive EU "Empowering Consumers" — Green Claims
-              </div>
-              <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.6 }}>
-                A partir de <strong>septembre 2026</strong>, l'Union Europeenne interdit les allegations
-                environnementales vagues ou non prouvees. Les termes comme "neutre en carbone",
-                "eco-friendly" ou "100% vert" seront sanctionnes. Carboniq scanne votre boutique pour
-                identifier les claims non conformes et vous propose des alternatives valides.
-              </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "#111827", marginBottom: 4 }}>Score de conformite</div>
+            <div style={{ fontSize: 12, color: "#6b7280", lineHeight: 1.5 }}>
+              {score >= 90 ? "Excellent ! Votre boutique est conforme." : score >= 70 ? "Quelques points a corriger." : "Attention, des claims problematiques ont ete detectees."}
+            </div>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 8, padding: "3px 10px", borderRadius: 99, background: scoreBg, color: scoreColor, fontSize: 12, fontWeight: 600 }}>
+              {score >= 90 ? "Conforme" : score >= 70 ? "A ameliorer" : "Non conforme"}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Directive info banner ── */}
+      <div style={{ ...card, marginBottom: 20, background: "linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%)", border: "1px solid #bfdbfe" }}>
+        <div style={{ padding: 20, display: "flex", alignItems: "flex-start", gap: 14 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg, #3b82f6, #1d4ed8)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0, color: "#fff" }}>!</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#1e3a5f", marginBottom: 4 }}>Ce que scanne Carboniq</div>
+            <div style={{ fontSize: 12.5, color: "#475569", lineHeight: 1.6 }}>
+              Titres et descriptions de <strong>produits</strong>, <strong>collections</strong> et <strong>pages CMS</strong>.
+              Carboniq detecte les termes interdits par la directive EU (neutre en carbone, eco-friendly, 100% vert, etc.)
+              et propose des formulations conformes.
             </div>
           </div>
         </div>
       </div>
 
       {/* ── Scan button ── */}
-      <div style={{ marginBottom: 20 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
         <Form method="post">
           <input type="hidden" name="intent" value="scan" />
-          <button
-            type="submit"
-            disabled={isScanning}
-            style={{
-              padding: "12px 28px",
-              borderRadius: 10,
-              border: "none",
-              background: isScanning
-                ? "linear-gradient(135deg, #9ca3af, #6b7280)"
-                : "linear-gradient(135deg, #3b82f6, #1d4ed8)",
-              color: "#fff",
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: isScanning ? "not-allowed" : "pointer",
-              transition: "all 0.2s ease",
-              boxShadow: isScanning ? "none" : "0 2px 8px rgba(59, 130, 246, 0.3)",
-            }}
-          >
+          <button type="submit" disabled={isScanning} style={{
+            padding: "11px 24px", borderRadius: 10, border: "none",
+            background: isScanning ? "#9ca3af" : "linear-gradient(135deg, #3b82f6, #1d4ed8)",
+            color: "#fff", fontSize: 13.5, fontWeight: 600, cursor: isScanning ? "not-allowed" : "pointer",
+            boxShadow: isScanning ? "none" : "0 2px 8px rgba(59,130,246,0.3)", transition: "all 0.15s ease",
+            fontFamily: "inherit",
+          }}>
             {isScanning ? "Scan en cours..." : "Scanner ma boutique"}
           </button>
         </Form>
         {scan?.scannedAt && (
-          <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 8 }}>
-            Dernier scan : {new Date(scan.scannedAt).toLocaleString("fr-FR")} — {scan.totalPages} produits analyses
+          <div style={{ fontSize: 12, color: "#9ca3af" }}>
+            Dernier scan : {new Date(scan.scannedAt).toLocaleString("fr-FR")} — {scan.totalPages} elements analyses (produits + collections + pages)
           </div>
         )}
       </div>
@@ -322,6 +371,30 @@ export default function Compliance() {
           </table>
         </div>
       </div>
+      {/* ── Scan history ── */}
+      {history.length > 1 && (
+        <div style={{ ...card, marginBottom: 20 }}>
+          <div style={{ padding: "16px 20px", borderBottom: "1px solid #f3f4f6" }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>Historique des scans</div>
+          </div>
+          <div style={{ padding: "4px 0" }}>
+            {history.map((h: any, i: number) => (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 20px", borderBottom: i < history.length - 1 ? "1px solid #f9fafb" : "none" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: h.totalIssues === 0 ? "#16a34a" : h.totalIssues <= 3 ? "#d97706" : "#dc2626", flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, color: "#374151" }}>{new Date(h.scannedAt).toLocaleDateString("fr-FR")} — {new Date(h.scannedAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{ fontSize: 12, color: "#6b7280" }}>{h.totalPages} elements</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: h.totalIssues === 0 ? "#16a34a" : "#dc2626", padding: "2px 8px", borderRadius: 6, background: h.totalIssues === 0 ? "#dcfce7" : "#fee2e2" }}>
+                    {h.totalIssues} probleme{h.totalIssues !== 1 ? "s" : ""}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </s-page>
   );
 }

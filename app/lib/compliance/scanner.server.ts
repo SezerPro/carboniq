@@ -94,6 +94,82 @@ export async function scanShopCompliance(shopId: string, admin: any): Promise<{
     }
   }
 
+  // Scan collections
+  let collectionsCursor: string | null = null;
+  let hasMoreCollections = true;
+  while (hasMoreCollections) {
+    const colResponse = await admin.graphql(`#graphql
+      query($cursor: String) {
+        collections(first: 50, after: $cursor) {
+          edges { node { id title descriptionHtml } cursor }
+          pageInfo { hasNextPage }
+        }
+      }
+    `, { variables: { cursor: collectionsCursor } });
+    const colJson = await colResponse.json();
+    const colEdges = colJson.data?.collections?.edges ?? [];
+    hasMoreCollections = colJson.data?.collections?.pageInfo?.hasNextPage ?? false;
+    for (const edge of colEdges) {
+      const node = edge.node;
+      collectionsCursor = edge.cursor;
+      totalProducts++;
+      const texts = [
+        { text: node.title, source: `Collection: ${node.title}`, sourceId: node.id },
+        { text: node.descriptionHtml?.replace(/<[^>]*>/g, " ") ?? "", source: `Description collection: ${node.title}`, sourceId: node.id },
+      ];
+      for (const { text, source, sourceId } of texts) {
+        if (!text) continue;
+        for (const rule of BANNED_CLAIMS) {
+          rule.pattern.lastIndex = 0;
+          const matches = text.matchAll(new RegExp(rule.pattern.source, rule.pattern.flags));
+          for (const match of matches) {
+            const start = Math.max(0, (match.index ?? 0) - 30);
+            const end = Math.min(text.length, (match.index ?? 0) + match[0].length + 30);
+            findings.push({ term: match[0], context: "..." + text.slice(start, end).trim() + "...", severity: rule.severity as ComplianceFinding["severity"], suggestion: rule.fix, source, sourceId });
+          }
+        }
+      }
+    }
+  }
+
+  // Scan CMS pages
+  let pagesCursor: string | null = null;
+  let hasMorePages = true;
+  while (hasMorePages) {
+    const pgResponse = await admin.graphql(`#graphql
+      query($cursor: String) {
+        pages(first: 50, after: $cursor) {
+          edges { node { id title body } cursor }
+          pageInfo { hasNextPage }
+        }
+      }
+    `, { variables: { cursor: pagesCursor } });
+    const pgJson = await pgResponse.json();
+    const pgEdges = pgJson.data?.pages?.edges ?? [];
+    hasMorePages = pgJson.data?.pages?.pageInfo?.hasNextPage ?? false;
+    for (const edge of pgEdges) {
+      const node = edge.node;
+      pagesCursor = edge.cursor;
+      totalProducts++;
+      const texts = [
+        { text: node.title, source: `Page: ${node.title}`, sourceId: node.id },
+        { text: node.body?.replace(/<[^>]*>/g, " ") ?? "", source: `Contenu page: ${node.title}`, sourceId: node.id },
+      ];
+      for (const { text, source, sourceId } of texts) {
+        if (!text) continue;
+        for (const rule of BANNED_CLAIMS) {
+          rule.pattern.lastIndex = 0;
+          const matches = text.matchAll(new RegExp(rule.pattern.source, rule.pattern.flags));
+          for (const match of matches) {
+            const start = Math.max(0, (match.index ?? 0) - 30);
+            const end = Math.min(text.length, (match.index ?? 0) + match[0].length + 30);
+            findings.push({ term: match[0], context: "..." + text.slice(start, end).trim() + "...", severity: rule.severity as ComplianceFinding["severity"], suggestion: rule.fix, source, sourceId });
+          }
+        }
+      }
+    }
+  }
+
   // Save scan result
   await prisma.complianceScan.create({
     data: {
@@ -105,6 +181,15 @@ export async function scanShopCompliance(shopId: string, admin: any): Promise<{
   });
 
   return { findings, totalProducts, totalIssues: findings.length };
+}
+
+// Get scan history for a shop
+export async function getScanHistory(shopId: string, limit = 10) {
+  return prisma.complianceScan.findMany({
+    where: { shopId },
+    orderBy: { scannedAt: "desc" },
+    take: limit,
+  });
 }
 
 // Get latest scan for a shop
