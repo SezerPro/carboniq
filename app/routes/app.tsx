@@ -4,28 +4,32 @@ import { boundary } from "@shopify/shopify-app-react-router/server";
 import { AppProvider } from "@shopify/shopify-app-react-router/react";
 
 import { authenticate } from "../shopify.server";
+import { detectLocale, getT, type Locale } from "../lib/i18n/translations";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   await authenticate.admin(request);
 
-  // eslint-disable-next-line no-undef
-  return { apiKey: process.env.SHOPIFY_API_KEY || "" };
+  const acceptLanguage = request.headers.get("Accept-Language");
+  const locale = detectLocale(acceptLanguage);
+
+  return { apiKey: process.env.SHOPIFY_API_KEY || "", locale };
 };
 
 export default function App() {
-  const { apiKey } = useLoaderData<typeof loader>();
+  const { apiKey, locale } = useLoaderData<typeof loader>();
+  const t = getT(locale as Locale);
 
   return (
     <AppProvider embedded apiKey={apiKey}>
       <s-app-nav>
-        <s-link href="/app">Dashboard</s-link>
-        <s-link href="/app/analytics">Analytiques</s-link>
-        <s-link href="/app/reduction">Réduire</s-link>
-        <s-link href="/app/dpp">DPP</s-link>
-        <s-link href="/app/reports">Rapports RSE</s-link>
-        <s-link href="/app/compliance">Conformité EU</s-link>
-        <s-link href="/app/settings">Paramètres</s-link>
-        <s-link href="/app/pricing">Plans & Tarifs</s-link>
+        <s-link href="/app">{t("dashboard")}</s-link>
+        <s-link href="/app/analytics">{t("analytics")}</s-link>
+        <s-link href="/app/reduction">{t("reduce")}</s-link>
+        <s-link href="/app/dpp">{t("dpp")}</s-link>
+        <s-link href="/app/reports">{t("reports")}</s-link>
+        <s-link href="/app/compliance">{t("compliance")}</s-link>
+        <s-link href="/app/settings">{t("settings")}</s-link>
+        <s-link href="/app/pricing">{t("pricing")}</s-link>
       </s-app-nav>
       <Outlet />
     </AppProvider>
