@@ -113,6 +113,7 @@ export default function Pricing() {
   return (
     <s-page heading="Choisir votre plan" backAction={{ url: "/app" }}>
       <style dangerouslySetInnerHTML={{ __html: `
+        .cq-pricing-wrap{width:100%;max-width:100%;margin:0 auto}
         .cq-pricing{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px}
         .cq-plan{background:#fdfcfb;border-radius:18px;border:1px solid rgba(164,156,144,.18);padding:28px 24px;position:relative;transition:all .2s ease;display:flex;flex-direction:column}
         .cq-plan:hover{box-shadow:0 8px 32px rgba(26,22,18,.1);transform:translateY(-2px)}
@@ -140,6 +141,8 @@ export default function Pricing() {
         @media(max-width:768px){.cq-pricing{grid-template-columns:repeat(2,1fr)}}
         @media(max-width:600px){.cq-pricing{grid-template-columns:1fr}}
       `}} />
+
+      <div className="cq-pricing-wrap">
 
       {/* Current plan indicator */}
       <div style={{
@@ -226,6 +229,8 @@ export default function Pricing() {
           </div>
         ))}
       </div>
+
+      </div>{/* close cq-pricing-wrap */}
     </s-page>
   );
 }
