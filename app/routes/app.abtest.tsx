@@ -281,7 +281,7 @@ export default function ABTestPage() {
         {activeTests.length === 0 && (
           <div style={{ ...card, padding: 32, textAlign: "center" }}>
             <div style={{ fontSize: 13, color: "#9ca3af" }}>
-              Aucun test actif. Cr\u00e9ez un nouveau test pour commencer.
+              Aucun test actif. Creez un nouveau test pour commencer.
             </div>
           </div>
         )}
@@ -299,7 +299,7 @@ export default function ABTestPage() {
               width: 8, height: 8, borderRadius: "50%",
               backgroundColor: "#9ca3af", display: "inline-block",
             }} />
-            Tests termin\u00e9s ({completedTests.length})
+            Tests termines ({completedTests.length})
           </div>
 
           {completedTests.map((test) => (
@@ -515,7 +515,7 @@ function VariantColumn({ label, color, impressions, conversions, conversionRate,
         />
         <StatCell
           label="Revenue"
-          value={`${revenue.toFixed(2)} \u20ac`}
+          value={`${revenue.toFixed(2)} EUR`}
         />
       </div>
     </div>
@@ -574,10 +574,10 @@ function CompletedTestCard({ test }: { test: TestData }) {
       }}>
         <MiniStat label="Impr. A" value={test.impressionsA} highlight={isWinnerA} />
         <MiniStat label="Conv. A" value={`${(test.conversionRateA * 100).toFixed(2)}%`} highlight={isWinnerA} />
-        <MiniStat label="Rev. A" value={`${test.revenueA.toFixed(0)}\u20ac`} highlight={isWinnerA} />
+        <MiniStat label="Rev. A" value={`${test.revenueA.toFixed(0)}EUR`} highlight={isWinnerA} />
         <MiniStat label="Impr. B" value={test.impressionsB} highlight={isWinnerB} />
         <MiniStat label="Conv. B" value={`${(test.conversionRateB * 100).toFixed(2)}%`} highlight={isWinnerB} />
-        <MiniStat label="Rev. B" value={`${test.revenueB.toFixed(0)}\u20ac`} highlight={isWinnerB} />
+        <MiniStat label="Rev. B" value={`${test.revenueB.toFixed(0)}EUR`} highlight={isWinnerB} />
       </div>
     </div>
   );

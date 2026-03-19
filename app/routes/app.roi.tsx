@@ -95,15 +95,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   if (!shop.enableOffset) {
     recommendations.push({
       title: "Activer la compensation au checkout",
-      description: "La compensation carbone au checkout g\u00e9n\u00e8re un revenu additionnel de 0.50-2\u20ac par commande.",
-      impact: "+1.2\u20ac / commande",
+      description: "La compensation carbone au checkout genere un revenu additionnel de 0.50-2 EUR par commande.",
+      impact: "+1.2 EUR / commande",
     });
   }
 
   if (abTestInsights.length === 0) {
     recommendations.push({
       title: "Lancer un A/B test",
-      description: "Testez diff\u00e9rents styles de badges ou messages pour optimiser vos conversions.",
+      description: "Testez differents styles de badges ou messages pour optimiser vos conversions.",
       impact: "+5-15% uplift",
     });
   }
@@ -111,15 +111,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   if (totalCertificates === 0) {
     recommendations.push({
       title: "Activer les certificats",
-      description: "Les certificats de compensation fid\u00e9lisent les clients et augmentent le panier moyen.",
-      impact: "+8% r\u00e9tention",
+      description: "Les certificats de compensation fidelisent les clients et augmentent le panier moyen.",
+      impact: "+8% retention",
     });
   }
 
   if (!shop.enableTrees && !shop.enableOcean) {
     recommendations.push({
       title: "Activer le multi-impact",
-      description: "Proposer des actions arbres et oc\u00e9an en plus du carbone augmente le taux d\u2019adoption de 40%.",
+      description: "Proposer des actions arbres et ocean en plus du carbone augmente le taux d'adoption de 40%.",
       impact: "+40% adoption",
     });
   }
@@ -174,16 +174,16 @@ export default function ROIDashboard() {
     <s-page heading="ROI & Performance" backAction={{ url: "/app" }}>
       {/* ── Hero metrics ── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 20 }}>
-        <MetricCard accent="#059669" label="Revenue offset" value={`${offsetRevenue.toFixed(2)} \u20ac`} sub="Revenu direct compensation" />
-        <MetricCard accent="#6366f1" label="Certificats g\u00e9n\u00e9r\u00e9s" value={totalCertificates.toString()} sub="Certificats envoy\u00e9s" />
+        <MetricCard accent="#059669" label="Revenue offset" value={`${offsetRevenue.toFixed(2)} EUR`} sub="Revenu direct compensation" />
+        <MetricCard accent="#6366f1" label="Certificats generes" value={totalCertificates.toString()} sub="Certificats envoyes" />
         <MetricCard accent="#0ea5e9" label="Taux d'adoption offset" value={`${adoptionRate.toFixed(1)}%`} sub="Commandes avec offset" />
-        <MetricCard accent="#f59e0b" label="Valeur ajout\u00e9e estim\u00e9e" value={`${estimatedAddedValue.toFixed(2)} \u20ac`} sub="Offset + lift conversion" />
+        <MetricCard accent="#f59e0b" label="Valeur ajoutee estimee" value={`${estimatedAddedValue.toFixed(2)} EUR`} sub="Offset + lift conversion" />
       </div>
 
       {/* ── Revenue breakdown ── */}
       <div style={{ ...card, marginBottom: 20 }}>
         <div style={{ padding: "16px 20px", borderBottom: "1px solid #f3f4f6" }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>D\u00e9composition du revenu</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>Decomposition du revenu</div>
         </div>
         <div style={{ padding: 20 }}>
           <RevenueBar
@@ -193,7 +193,7 @@ export default function ROIDashboard() {
             color="#059669"
           />
           <RevenueBar
-            label="Lift conversion estim\u00e9"
+            label="Lift conversion estime"
             value={revenueBreakdown.conversionLift}
             max={maxRevBar}
             color="#6366f1"
@@ -201,7 +201,7 @@ export default function ROIDashboard() {
           <div style={{ marginTop: 16, padding: "12px 16px", backgroundColor: "#f9fafb", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>Panier moyen offset</span>
             <span style={{ fontSize: 16, fontWeight: 700, color: "#111827", fontVariantNumeric: "tabular-nums" }}>
-              {revenueBreakdown.avgOrderValueLift.toFixed(2)} \u20ac
+              {revenueBreakdown.avgOrderValueLift.toFixed(2)} EUR
             </span>
           </div>
         </div>
@@ -280,7 +280,7 @@ export default function ROIDashboard() {
           {abTestInsights.length === 0 ? (
             <div style={{ textAlign: "center", padding: "20px 0" }}>
               <div style={{ fontSize: 13, color: "#9ca3af", marginBottom: 8 }}>
-                Aucun test A/B termin\u00e9 pour le moment
+                Aucun test A/B termine pour le moment
               </div>
               <Link
                 to="/app/abtest"
@@ -394,7 +394,7 @@ function RevenueBar({ label, value, max, color }: { label: string; value: number
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
         <span style={{ fontSize: 13, fontWeight: 500, color: "#374151" }}>{label}</span>
         <span style={{ fontSize: 13, fontWeight: 700, color: "#111827", fontVariantNumeric: "tabular-nums" }}>
-          {value.toFixed(2)} \u20ac
+          {value.toFixed(2)} EUR
         </span>
       </div>
       <div style={{ width: "100%", height: 10, backgroundColor: "#f3f4f6", borderRadius: 5, overflow: "hidden" }}>

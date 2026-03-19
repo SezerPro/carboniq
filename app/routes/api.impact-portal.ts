@@ -99,32 +99,32 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     const milestones = [
       {
-        label: "100 kg CO\u2082 compens\u00e9s",
+        label: "100 kg CO2 compenses",
         reached: totalCarbonKg >= 100,
         date: totalCarbonKg >= 100 ? findMilestoneDate(snapshots, "totalOffsetKg", 100) : null,
       },
       {
-        label: "500 kg CO\u2082 compens\u00e9s",
+        label: "500 kg CO2 compenses",
         reached: totalCarbonKg >= 500,
         date: totalCarbonKg >= 500 ? findMilestoneDate(snapshots, "totalOffsetKg", 500) : null,
       },
       {
-        label: "1 tonne CO\u2082 compens\u00e9e",
+        label: "1 tonne CO2 compensee",
         reached: totalCarbonKg >= 1000,
         date: totalCarbonKg >= 1000 ? findMilestoneDate(snapshots, "totalOffsetKg", 1000) : null,
       },
       {
-        label: "50 arbres plant\u00e9s",
+        label: "50 arbres plantes",
         reached: treesPlanted >= 50,
         date: treesPlanted >= 50 ? findMilestoneDate(snapshots, "totalTreesPlanted", 50) : null,
       },
       {
-        label: "100 arbres plant\u00e9s",
+        label: "100 arbres plantes",
         reached: treesPlanted >= 100,
         date: treesPlanted >= 100 ? findMilestoneDate(snapshots, "totalTreesPlanted", 100) : null,
       },
       {
-        label: "50 kg plastique retir\u00e9",
+        label: "50 kg plastique retire",
         reached: oceanKg >= 50,
         date: oceanKg >= 50 ? findMilestoneDate(snapshots, "totalOceanKg", 50) : null,
       },
