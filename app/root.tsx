@@ -1,5 +1,4 @@
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
-import "./styles/carboniq.css";
 
 export default function App() {
   return (

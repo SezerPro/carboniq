@@ -11,7 +11,6 @@ import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
 import { calculateAndSave } from "../lib/carbon/engine.server";
 import { seedEmissionFactors } from "../lib/carbon/seed.server";
-import { T, IMPACT, S } from "../lib/design/tokens";
 import { hasAccess, FEATURES, type PlanTier } from "../lib/plans/constants";
 import { getPlanTier } from "../lib/plans/gates.server";
 

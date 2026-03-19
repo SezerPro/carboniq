@@ -78,8 +78,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
  * Body: { testId, variant, event: "impression"|"conversion", revenue? }
  */
 export async function action({ request }: ActionFunctionArgs) {
+  const headers = getCorsWriteHeaders(request);
+
   if (request.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_PUBLIC });
+    return new Response(null, { status: 204, headers });
   }
 
   try {
@@ -95,7 +97,7 @@ export async function action({ request }: ActionFunctionArgs) {
     } catch {
       return new Response(
         JSON.stringify({ error: "Invalid JSON body" }),
-        { status: 400, headers: CORS_PUBLIC },
+        { status: 400, headers },
       );
     }
 
@@ -104,21 +106,21 @@ export async function action({ request }: ActionFunctionArgs) {
     if (!testId || !variant || !event) {
       return new Response(
         JSON.stringify({ error: "Missing required fields: testId, variant, event" }),
-        { status: 400, headers: CORS_PUBLIC },
+        { status: 400, headers },
       );
     }
 
     if (variant !== "A" && variant !== "B") {
       return new Response(
         JSON.stringify({ error: "variant must be A or B" }),
-        { status: 400, headers: CORS_PUBLIC },
+        { status: 400, headers },
       );
     }
 
     if (event !== "impression" && event !== "conversion") {
       return new Response(
         JSON.stringify({ error: "event must be impression or conversion" }),
-        { status: 400, headers: CORS_PUBLIC },
+        { status: 400, headers },
       );
     }
 
@@ -130,13 +132,13 @@ export async function action({ request }: ActionFunctionArgs) {
 
     return new Response(
       JSON.stringify({ ok: true }),
-      { status: 200, headers: CORS_PUBLIC },
+      { status: 200, headers },
     );
   } catch {
     // Silent failure — always return success to avoid breaking storefront
     return new Response(
       JSON.stringify({ ok: true }),
-      { status: 200, headers: CORS_PUBLIC },
+      { status: 200, headers },
     );
   }
 }
