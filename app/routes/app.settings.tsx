@@ -37,6 +37,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       carbonCostEur: shop.carbonCostEur,
       klaviyoApiKey: shop.klaviyoApiKey ? "••••••••" : null,
       klaviyoListId: shop.klaviyoListId,
+      locale: shop.locale,
     },
   };
 };
@@ -77,6 +78,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const enableOcean = formData.get("enableOcean");
   if (enableOcean !== null) updates.enableOcean = enableOcean === "true";
 
+  // Locale
+  const locale = formData.get("locale") as string | null;
+  if (locale) updates.locale = locale;
+
   // Klaviyo
   const klaviyoApiKey = formData.get("klaviyoApiKey") as string | null;
   if (klaviyoApiKey && klaviyoApiKey !== "••••••••") updates.klaviyoApiKey = encrypt(klaviyoApiKey);
@@ -108,6 +113,36 @@ export default function Settings() {
 
   return (
     <s-page heading="Paramètres" backAction={{ url: "/app" }}>
+
+      {/* Language Settings */}
+      <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb", marginBottom: 20, overflow: "hidden" }}>
+        <div style={{ padding: "16px 20px", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 16 }}>🌐</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>Langue / Language</span>
+        </div>
+        <fetcher.Form method="POST" style={{ padding: 20 }}>
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Langue de l'interface</div>
+            <select name="locale" defaultValue={shop.locale ?? "auto"} style={selectStyle}>
+              <option value="auto">Automatique (navigateur)</option>
+              <option value="en">🇬🇧 English</option>
+              <option value="fr">🇫🇷 Francais</option>
+              <option value="de">🇩🇪 Deutsch</option>
+              <option value="es">🇪🇸 Espanol</option>
+              <option value="pt">🇧🇷 Portugues</option>
+              <option value="it">🇮🇹 Italiano</option>
+              <option value="nl">🇳🇱 Nederlands</option>
+              <option value="ja">🇯🇵 日本語</option>
+            </select>
+            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 6 }}>
+              En mode automatique, la langue est detectee depuis votre navigateur. Choisissez une langue manuellement pour forcer l'affichage.
+            </div>
+          </div>
+          <button type="submit" disabled={isSaving} style={btnStyle}>
+            {isSaving ? "Enregistrement..." : "Enregistrer"}
+          </button>
+        </fetcher.Form>
+      </div>
 
       {/* Badge Settings */}
       <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb", marginBottom: 20, overflow: "hidden" }}>

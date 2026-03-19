@@ -96,6 +96,7 @@ model Shop {
   badgeColor     String       @default("#22c55e")
   badgePosition  String       @default("below_price")
   showLabel      Boolean      @default(true)
+  locale         String       @default("auto")
   installedAt    DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 

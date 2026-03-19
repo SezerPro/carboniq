@@ -4,13 +4,24 @@ import { boundary } from "@shopify/shopify-app-react-router/server";
 import { AppProvider } from "@shopify/shopify-app-react-router/react";
 
 import { authenticate } from "../shopify.server";
-import { detectLocale, getT, type Locale } from "../lib/i18n/translations";
+import db from "../db.server";
+import { detectLocale, getT, type Locale, SUPPORTED_LOCALES } from "../lib/i18n/translations";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
+  const { session } = await authenticate.admin(request);
 
-  const acceptLanguage = request.headers.get("Accept-Language");
-  const locale = detectLocale(acceptLanguage);
+  // Check if shop has a saved locale preference
+  const shop = await db.shop.findUnique({
+    where: { shopDomain: session.shop },
+    select: { locale: true },
+  });
+
+  let locale: Locale;
+  if (shop?.locale && shop.locale !== "auto" && SUPPORTED_LOCALES.includes(shop.locale as Locale)) {
+    locale = shop.locale as Locale;
+  } else {
+    locale = detectLocale(request.headers.get("Accept-Language"));
+  }
 
   return { apiKey: process.env.SHOPIFY_API_KEY || "", locale };
 };
