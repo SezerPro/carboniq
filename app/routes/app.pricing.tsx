@@ -65,7 +65,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       plan as Exclude<PlanTier, "FREE">,
       session.shop,
       returnUrl,
-      true, // test mode in dev — set to false for production
+      process.env.NODE_ENV !== "production", // test in dev, real billing in prod
     );
 
     if ("error" in result) {
