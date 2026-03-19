@@ -30,7 +30,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const newShop = await db.shop.create({
       data: {
         shopDomain: session.shop,
-        accessToken: session.accessToken ?? "",
+        accessToken: "",  // Managed by Shopify session, not stored
         plan: "STARTER",
         planStatus: "TRIALING",
         trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),

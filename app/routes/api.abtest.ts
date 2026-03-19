@@ -7,12 +7,7 @@ import {
   recordConversion,
 } from "../lib/abtest/abtest.server";
 
-const CORS_HEADERS: HeadersInit = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-  "Content-Type": "application/json",
-};
+import { CORS_PUBLIC, getCorsWriteHeaders, checkRateLimit } from "../lib/security/api-auth.server";
 
 /**
  * GET /api/abtest?shop=xxx&test_type=badge_style
@@ -22,7 +17,7 @@ const CORS_HEADERS: HeadersInit = {
  */
 export async function loader({ request }: LoaderFunctionArgs) {
   if (request.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
+    return new Response(null, { status: 204, headers: CORS_PUBLIC });
   }
 
   try {
@@ -33,7 +28,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     if (!shopDomain || !testType) {
       return new Response(
         JSON.stringify({ error: "Missing shop or test_type parameter" }),
-        { status: 400, headers: CORS_HEADERS },
+        { status: 400, headers: CORS_PUBLIC },
       );
     }
 
@@ -44,7 +39,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     if (!shop) {
       return new Response(
         JSON.stringify({ error: "Shop not found" }),
-        { status: 404, headers: CORS_HEADERS },
+        { status: 404, headers: CORS_PUBLIC },
       );
     }
 
@@ -53,7 +48,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     if (!test) {
       return new Response(
         JSON.stringify({ testId: null, variant: null, config: null }),
-        { status: 200, headers: CORS_HEADERS },
+        { status: 200, headers: CORS_PUBLIC },
       );
     }
 
@@ -65,13 +60,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
         variant,
         config,
       }),
-      { status: 200, headers: CORS_HEADERS },
+      { status: 200, headers: CORS_PUBLIC },
     );
   } catch {
     // Silent failure — return empty result
     return new Response(
       JSON.stringify({ testId: null, variant: null, config: null }),
-      { status: 200, headers: CORS_HEADERS },
+      { status: 200, headers: CORS_PUBLIC },
     );
   }
 }
@@ -84,7 +79,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
  */
 export async function action({ request }: ActionFunctionArgs) {
   if (request.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
+    return new Response(null, { status: 204, headers: CORS_PUBLIC });
   }
 
   try {
@@ -100,7 +95,7 @@ export async function action({ request }: ActionFunctionArgs) {
     } catch {
       return new Response(
         JSON.stringify({ error: "Invalid JSON body" }),
-        { status: 400, headers: CORS_HEADERS },
+        { status: 400, headers: CORS_PUBLIC },
       );
     }
 
@@ -109,21 +104,21 @@ export async function action({ request }: ActionFunctionArgs) {
     if (!testId || !variant || !event) {
       return new Response(
         JSON.stringify({ error: "Missing required fields: testId, variant, event" }),
-        { status: 400, headers: CORS_HEADERS },
+        { status: 400, headers: CORS_PUBLIC },
       );
     }
 
     if (variant !== "A" && variant !== "B") {
       return new Response(
         JSON.stringify({ error: "variant must be A or B" }),
-        { status: 400, headers: CORS_HEADERS },
+        { status: 400, headers: CORS_PUBLIC },
       );
     }
 
     if (event !== "impression" && event !== "conversion") {
       return new Response(
         JSON.stringify({ error: "event must be impression or conversion" }),
-        { status: 400, headers: CORS_HEADERS },
+        { status: 400, headers: CORS_PUBLIC },
       );
     }
 
@@ -135,13 +130,13 @@ export async function action({ request }: ActionFunctionArgs) {
 
     return new Response(
       JSON.stringify({ ok: true }),
-      { status: 200, headers: CORS_HEADERS },
+      { status: 200, headers: CORS_PUBLIC },
     );
   } catch {
     // Silent failure — always return success to avoid breaking storefront
     return new Response(
       JSON.stringify({ ok: true }),
-      { status: 200, headers: CORS_HEADERS },
+      { status: 200, headers: CORS_PUBLIC },
     );
   }
 }

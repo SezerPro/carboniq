@@ -6,13 +6,7 @@ import {
   getOrderOffset,
 } from "../lib/offset/offset.server";
 import { generateCertificate } from "../lib/certificate/certificate.server";
-
-const CORS_HEADERS: HeadersInit = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-  "Content-Type": "application/json",
-};
+import { getCorsWriteHeaders, verifyApiRequest, checkRateLimit } from "../lib/security/api-auth.server";
 
 /**
  * GET /api/offset?shop=xxx&order_id=xxx
@@ -20,9 +14,10 @@ const CORS_HEADERS: HeadersInit = {
  * Retrieve the offset (and certificate) for a given order.
  */
 export async function loader({ request }: LoaderFunctionArgs) {
-  // Handle CORS preflight
+  const headers = getCorsWriteHeaders(request);
+
   if (request.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
+    return new Response(null, { status: 204, headers });
   }
 
   const url = new URL(request.url);
@@ -30,21 +25,24 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const orderId = url.searchParams.get("order_id");
 
   if (!shopDomain || !orderId) {
-    return new Response(
-      JSON.stringify({ error: "Missing shop or order_id parameter" }),
-      { status: 400, headers: CORS_HEADERS },
-    );
+    return new Response(JSON.stringify({ error: "Missing shop or order_id parameter" }), { status: 400, headers });
   }
 
-  const shop = await prisma.shop.findUnique({
-    where: { shopDomain },
-  });
+  // Rate limit
+  const rl = checkRateLimit(`offset-read:${shopDomain}`, "read");
+  if (!rl.allowed) {
+    return new Response(JSON.stringify({ error: "Rate limit exceeded" }), { status: 429, headers });
+  }
 
+  // Verify shop
+  const verification = await verifyApiRequest(request, shopDomain);
+  if (!verification.valid) {
+    return new Response(JSON.stringify({ error: verification.error }), { status: 403, headers });
+  }
+
+  const shop = await prisma.shop.findUnique({ where: { shopDomain } });
   if (!shop) {
-    return new Response(
-      JSON.stringify({ error: "Shop not found" }),
-      { status: 404, headers: CORS_HEADERS },
-    );
+    return new Response(JSON.stringify({ error: "Shop not found" }), { status: 404, headers });
   }
 
   const offset = await getOrderOffset(shop.id, orderId);
@@ -52,7 +50,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   if (!offset) {
     return new Response(
       JSON.stringify({ error: "Offset not found for this order" }),
-      { status: 404, headers: CORS_HEADERS },
+      { status: 404, headers: headers },
     );
   }
 
@@ -75,7 +73,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
           }
         : null,
     }),
-    { status: 200, headers: CORS_HEADERS },
+    { status: 200, headers: headers },
   );
 }
 
@@ -86,15 +84,16 @@ export async function loader({ request }: LoaderFunctionArgs) {
  * Body: { shop, orderId, orderName, customerEmail, carbonKg }
  */
 export async function action({ request }: ActionFunctionArgs) {
+  const headers = getCorsWriteHeaders(request);
   // Handle CORS preflight
   if (request.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
+    return new Response(null, { status: 204, headers: headers });
   }
 
   if (request.method !== "POST") {
     return new Response(
       JSON.stringify({ error: "Method not allowed" }),
-      { status: 405, headers: CORS_HEADERS },
+      { status: 405, headers: headers },
     );
   }
 
@@ -111,28 +110,33 @@ export async function action({ request }: ActionFunctionArgs) {
   } catch {
     return new Response(
       JSON.stringify({ error: "Invalid JSON body" }),
-      { status: 400, headers: CORS_HEADERS },
+      { status: 400, headers: headers },
     );
   }
 
   const { shop: shopDomain, orderId, orderName, customerEmail, carbonKg } = body;
 
   if (!shopDomain || !orderId || !carbonKg) {
-    return new Response(
-      JSON.stringify({ error: "Missing required fields: shop, orderId, carbonKg" }),
-      { status: 400, headers: CORS_HEADERS },
-    );
+    return new Response(JSON.stringify({ error: "Missing required fields: shop, orderId, carbonKg" }), { status: 400, headers });
   }
 
-  // Find shop by domain
-  const shop = await prisma.shop.findUnique({
-    where: { shopDomain },
-  });
+  // Rate limit writes
+  const rl = checkRateLimit(`offset-write:${shopDomain}`, "write");
+  if (!rl.allowed) {
+    return new Response(JSON.stringify({ error: "Rate limit exceeded" }), { status: 429, headers });
+  }
 
+  // Verify shop exists and plan active
+  const verification = await verifyApiRequest(request, shopDomain);
+  if (!verification.valid) {
+    return new Response(JSON.stringify({ error: verification.error }), { status: 403, headers });
+  }
+
+  const shop = await prisma.shop.findUnique({ where: { shopDomain } });
   if (!shop) {
     return new Response(
       JSON.stringify({ error: "Shop not found" }),
-      { status: 404, headers: CORS_HEADERS },
+      { status: 404, headers: headers },
     );
   }
 
@@ -158,6 +162,6 @@ export async function action({ request }: ActionFunctionArgs) {
       certificateCode: certificate.uniqueCode,
       amountEur,
     }),
-    { status: 201, headers: CORS_HEADERS },
+    { status: 201, headers: headers },
   );
 }

@@ -8,6 +8,7 @@ import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
+import { encrypt } from "../lib/security/api-auth.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
@@ -78,7 +79,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   // Klaviyo
   const klaviyoApiKey = formData.get("klaviyoApiKey") as string | null;
-  if (klaviyoApiKey && klaviyoApiKey !== "••••••••") updates.klaviyoApiKey = klaviyoApiKey;
+  if (klaviyoApiKey && klaviyoApiKey !== "••••••••") updates.klaviyoApiKey = encrypt(klaviyoApiKey);
 
   const klaviyoListId = formData.get("klaviyoListId") as string | null;
   if (klaviyoListId) updates.klaviyoListId = klaviyoListId;
