@@ -190,7 +190,7 @@ export default function Reduction() {
               Potentiel de réduction estimé
             </div>
             <div style={{ fontSize: 28, fontWeight: 800, color: "#047857" }}>
-              -{totalPotentialSaving} kg CO{"\u2082"} ({totalPotentialPct}%)
+              -{totalPotentialSaving} kg CO2 ({totalPotentialPct}%)
             </div>
           </div>
           <div
@@ -417,7 +417,7 @@ export default function Reduction() {
                         backgroundColor: "#dcfce7",
                       }}
                     >
-                      -{tip.potentialSaving.toFixed(1)} kg CO{"\u2082"}
+                      -{tip.potentialSaving.toFixed(1)} kg CO2
                     </span>
                     {tip.potentialSavingPct != null && (
                       <span

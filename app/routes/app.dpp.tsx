@@ -579,7 +579,7 @@ export default function DPP() {
                 {[
                   "Produit",
                   "Catégorie",
-                  "CO\u2082",
+                  "CO2",
                   "Impact",
                   "DPP",
                   "QR Code",

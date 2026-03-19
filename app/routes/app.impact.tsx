@@ -63,12 +63,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const oceanKg = stats.ocean.totalKg;
 
   const milestones = [
-    { label: "100 kg CO\u2082", target: 100, current: totalCarbonKg, icon: "\u2601\uFE0F" },
-    { label: "500 kg CO\u2082", target: 500, current: totalCarbonKg, icon: "\u26C8\uFE0F" },
-    { label: "1 tonne CO\u2082", target: 1000, current: totalCarbonKg, icon: "\uD83C\uDF0D" },
-    { label: "50 arbres", target: 50, current: treesPlanted, icon: "\uD83C\uDF33" },
-    { label: "100 arbres", target: 100, current: treesPlanted, icon: "\uD83C\uDF32" },
-    { label: "50 kg plastique", target: 50, current: oceanKg, icon: "\uD83C\uDF0A" },
+    { label: "100 kg CO2", target: 100, current: totalCarbonKg, icon: "☁️" },
+    { label: "500 kg CO2", target: 500, current: totalCarbonKg, icon: "⛈️" },
+    { label: "1 tonne CO2", target: 1000, current: totalCarbonKg, icon: "🌍" },
+    { label: "50 arbres", target: 50, current: treesPlanted, icon: "🌳" },
+    { label: "100 arbres", target: 100, current: treesPlanted, icon: "🌲" },
+    { label: "50 kg plastique", target: 50, current: oceanKg, icon: "🌊" },
   ];
 
   const appUrl = process.env.SHOPIFY_APP_URL || "";
@@ -221,7 +221,7 @@ export default function ImpactPortal() {
             icon={"\u2601\uFE0F"}
             value={stats.totalCarbonKg}
             suffix=" kg"
-            label="CO\u2082 compense"
+            label="CO2 compense"
             color="#16a34a"
           />
           <AnimatedCounter
@@ -368,7 +368,7 @@ export default function ImpactPortal() {
               display: "flex", justifyContent: "center", gap: 16,
               marginTop: 14, fontSize: 11, color: "#6b7280",
             }}>
-              <span><span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: "#16a34a", marginRight: 4 }} /> CO{"\u2082"} compense (kg)</span>
+              <span><span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: "#16a34a", marginRight: 4 }} /> CO2 compense (kg)</span>
             </div>
           </div>
         </div>
@@ -514,7 +514,7 @@ function formatNum(n: number): string {
 function getTypeInfo(type: string) {
   switch (type) {
     case "CARBON":
-      return { icon: "\u2601\uFE0F", color: "#16a34a", bg: "#dcfce7", verb: "compense", unit: "kg CO\u2082" };
+      return { icon: "\u2601\uFE0F", color: "#16a34a", bg: "#dcfce7", verb: "compense", unit: "kg CO2" };
     case "TREE":
       return { icon: "\uD83C\uDF33", color: "#15803d", bg: "#d1fae5", verb: "plante", unit: "arbre(s)" };
     case "OCEAN":
