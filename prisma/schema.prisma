@@ -18,6 +18,7 @@ datasource db {
 enum Plan {
   STARTER
   GROWTH
+  PRO
   SCALE
 }
 

@@ -4,12 +4,14 @@ import type { PlanTier } from "./constants";
 const PLAN_PRICES: Record<Exclude<PlanTier, "FREE">, number> = {
   STARTER: 19.90,
   GROWTH: 49.90,
+  PRO: 89.90,
   SCALE: 149.90,
 };
 
 const PLAN_NAMES: Record<Exclude<PlanTier, "FREE">, string> = {
   STARTER: "Carboniq Starter",
   GROWTH: "Carboniq Growth",
+  PRO: "Carboniq Pro",
   SCALE: "Carboniq Scale",
 };
 
@@ -17,6 +19,7 @@ const PRODUCT_LIMITS: Record<PlanTier, number> = {
   FREE: 10,
   STARTER: 100,
   GROWTH: 1000,
+  PRO: 5000,
   SCALE: 999999,
 };
 
@@ -187,6 +190,7 @@ export async function syncPlanFromShopify(admin: any, shopDomain: string): Promi
   // Determine plan from subscription name
   let plan: PlanTier = "FREE";
   if (activeSub.name.includes("Scale")) plan = "SCALE";
+  else if (activeSub.name.includes("Pro")) plan = "PRO";
   else if (activeSub.name.includes("Growth")) plan = "GROWTH";
   else if (activeSub.name.includes("Starter")) plan = "STARTER";
 

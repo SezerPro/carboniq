@@ -55,7 +55,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   // ── Upgrade to paid plan ──
-  if (intent === "upgrade" && (plan === "STARTER" || plan === "GROWTH" || plan === "SCALE")) {
+  if (intent === "upgrade" && (plan === "STARTER" || plan === "GROWTH" || plan === "PRO" || plan === "SCALE")) {
     // Build the return URL (merchant comes back here after approving)
     const url = new URL(request.url);
     const returnUrl = `${url.origin}/app/pricing`;
@@ -79,7 +79,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   return { error: "Action inconnue" };
 };
 
-const TIER_LEVEL: Record<string, number> = { FREE: 0, STARTER: 1, GROWTH: 2, SCALE: 3 };
+const TIER_LEVEL: Record<string, number> = { FREE: 0, STARTER: 1, GROWTH: 2, PRO: 3, SCALE: 4 };
 
 export default function Pricing() {
   const { currentTier } = useLoaderData<typeof loader>();
@@ -113,7 +113,7 @@ export default function Pricing() {
   return (
     <s-page heading="Choisir votre plan" backAction={{ url: "/app" }}>
       <style dangerouslySetInnerHTML={{ __html: `
-        .cq-pricing{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+        .cq-pricing{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px}
         .cq-plan{background:#fdfcfb;border-radius:18px;border:1px solid rgba(164,156,144,.18);padding:28px 24px;position:relative;transition:all .2s ease;display:flex;flex-direction:column}
         .cq-plan:hover{box-shadow:0 8px 32px rgba(26,22,18,.1);transform:translateY(-2px)}
         .cq-plan-rec{border:2px solid #4a8a32;box-shadow:0 0 0 4px rgba(74,138,50,.1)}
@@ -136,7 +136,8 @@ export default function Pricing() {
         .cq-plan-btn-ghost:hover{background:#f7f5f3;color:#1a1612}
         .cq-plan-btn-current{background:#6366f1;color:#fff;cursor:default}
         .cq-plan-limits{font-size:11px;color:#a09890;text-align:center;margin-top:8px}
-        @media(max-width:1024px){.cq-pricing{grid-template-columns:repeat(2,1fr)}}
+        @media(max-width:1200px){.cq-pricing{grid-template-columns:repeat(3,1fr)}}
+        @media(max-width:768px){.cq-pricing{grid-template-columns:repeat(2,1fr)}}
         @media(max-width:600px){.cq-pricing{grid-template-columns:1fr}}
       `}} />
 
@@ -147,12 +148,12 @@ export default function Pricing() {
       }}>
         <div>
           <span style={{ fontSize: 13, color: "#7d756c" }}>Plan actuel : </span>
-          <span style={{ fontSize: 15, fontWeight: 700, color: "#1a1612" }}>{currentTier === "FREE" ? "Free" : currentTier === "STARTER" ? "Starter" : currentTier === "GROWTH" ? "Growth" : "Scale"}</span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: "#1a1612" }}>{currentTier === "FREE" ? "Free" : currentTier === "STARTER" ? "Starter" : currentTier === "GROWTH" ? "Growth" : currentTier === "PRO" ? "Pro" : "Scale"}</span>
         </div>
         <span style={{
           fontSize: 11, fontWeight: 600, padding: "4px 12px", borderRadius: 999,
-          background: currentTier === "FREE" ? "#f3f4f6" : currentTier === "STARTER" ? "#dbeafe" : currentTier === "GROWTH" ? "#dcfce7" : "#fef3c7",
-          color: currentTier === "FREE" ? "#6b7280" : currentTier === "STARTER" ? "#1d4ed8" : currentTier === "GROWTH" ? "#166534" : "#92400e",
+          background: currentTier === "FREE" ? "#f3f4f6" : currentTier === "STARTER" ? "#dbeafe" : currentTier === "GROWTH" ? "#dcfce7" : currentTier === "PRO" ? "#ede9fe" : "#fef3c7",
+          color: currentTier === "FREE" ? "#6b7280" : currentTier === "STARTER" ? "#1d4ed8" : currentTier === "GROWTH" ? "#166534" : currentTier === "PRO" ? "#6d28d9" : "#92400e",
         }}>
           {currentTier === "FREE" ? "Gratuit" : "Actif"}
         </span>

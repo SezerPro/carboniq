@@ -16,17 +16,18 @@ export function getPlanTier(plan?: string | null, status?: string | null): PlanT
   switch (plan) {
     case "STARTER": return "STARTER";
     case "GROWTH": return "GROWTH";
+    case "PRO": return "PRO";
     case "SCALE": return "SCALE";
     default: return "FREE";
   }
 }
 
 export const PRODUCT_LIMITS: Record<PlanTier, number> = {
-  FREE: 10, STARTER: 100, GROWTH: 1000, SCALE: 999999,
+  FREE: 10, STARTER: 100, GROWTH: 1000, PRO: 5000, SCALE: 999999,
 };
 
 export const CERT_LIMITS: Record<PlanTier, number> = {
-  FREE: 0, STARTER: 50, GROWTH: 500, SCALE: 999999,
+  FREE: 0, STARTER: 50, GROWTH: 500, PRO: 2000, SCALE: 999999,
 };
 
 export function checkFeature(userPlan: PlanTier, featureId: string) {

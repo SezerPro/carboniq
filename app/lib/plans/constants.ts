@@ -2,10 +2,10 @@
  * Plan constants — client-safe (no Prisma, no server imports)
  */
 
-export type PlanTier = "FREE" | "STARTER" | "GROWTH" | "SCALE";
+export type PlanTier = "FREE" | "STARTER" | "GROWTH" | "PRO" | "SCALE";
 
 const TIER_LEVEL: Record<PlanTier, number> = {
-  FREE: 0, STARTER: 1, GROWTH: 2, SCALE: 3,
+  FREE: 0, STARTER: 1, GROWTH: 2, PRO: 3, SCALE: 4,
 };
 
 export function hasAccess(userPlan: PlanTier, requiredPlan: PlanTier): boolean {
@@ -45,12 +45,16 @@ export const FEATURES: Record<string, FeatureGate> = {
   reduction_full:   { id: "reduction_full",   label: "Reduction complete",     requiredPlan: "GROWTH",  description: "Toutes les suggestions + score" },
   reports_quarterly:{ id: "reports_quarterly", label: "Rapports trimestriels", requiredPlan: "GROWTH",  description: "Rapports RSE trimestriels" },
   roi:              { id: "roi",              label: "ROI Dashboard",          requiredPlan: "GROWTH",  description: "Impact business et revenue" },
+  // ── PRO ──
+  scope3:           { id: "scope3",           label: "Scope 3",               requiredPlan: "PRO",     description: "Estimation auto supply chain" },
+  reports_annual:   { id: "reports_annual",   label: "Rapports annuels",      requiredPlan: "PRO",     description: "Rapports RSE trimestriels + annuels" },
+  flow_basic:       { id: "flow_basic",       label: "Shopify Flow (3)",      requiredPlan: "PRO",     description: "3 triggers automatises" },
   // ── SCALE ──
-  scope3:           { id: "scope3",           label: "Scope 3",               requiredPlan: "SCALE",   description: "Emissions supply chain" },
+  scope3_full:      { id: "scope3_full",      label: "Scope 3 complet",       requiredPlan: "SCALE",   description: "Estimation + saisie manuelle" },
   compliance_full:  { id: "compliance_full",  label: "Conformite illimitee",   requiredPlan: "SCALE",   description: "Scans Green Claims illimites" },
-  reports_annual:   { id: "reports_annual",   label: "Rapports annuels CSRD", requiredPlan: "SCALE",   description: "Rapports compatibles CSRD" },
+  reports_csrd:     { id: "reports_csrd",     label: "Rapports CSRD",         requiredPlan: "SCALE",   description: "Rapports compatibles CSRD" },
   abtest_unlimited: { id: "abtest_unlimited", label: "A/B tests illimites",   requiredPlan: "SCALE",   description: "Tests de badge illimites" },
-  flow_triggers:    { id: "flow_triggers",    label: "Shopify Flow",          requiredPlan: "SCALE",   description: "Triggers et actions automatisees" },
+  flow_triggers:    { id: "flow_triggers",    label: "Shopify Flow illimite", requiredPlan: "SCALE",   description: "Triggers et actions illimites" },
 };
 
 export interface PlanInfo {
@@ -113,6 +117,22 @@ export const PLANS: PlanInfo[] = [
       "Support email prioritaire (24h)",
     ],
     limits: "1 000 produits · 500 certificats/mois", cta: "Commencer maintenant",
+  },
+  {
+    tier: "PRO", name: "Pro", price: "89,90€", priceNum: 89.90, period: "/mois",
+    description: "Scope 3, Flow et reporting avance",
+    features: [
+      "5 000 produits analyses",
+      "Tout Growth +",
+      "Scope 3 (estimation auto)",
+      "Conformite EU (10 scans/mois)",
+      "A/B Testing (10 tests actifs)",
+      "Shopify Flow (3 triggers)",
+      "Rapports trimestriels + annuels",
+      "Certificats (2 000/mois)",
+      "Support email prioritaire (12h)",
+    ],
+    limits: "5 000 produits · 2 000 certificats/mois", cta: "Commencer maintenant",
   },
   {
     tier: "SCALE", name: "Scale", price: "149,90€", priceNum: 149.90, period: "/mois",
