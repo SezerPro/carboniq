@@ -69,7 +69,6 @@
 
     fetch(apiUrl + queryStr)
       .then(function(res) { return res.json(); })
-      .then(function(res) { return res.json(); })
       .then(function(data) {
         if (data.display === 'none' || !data.badge) {
           wrapper.style.display = 'none';
