@@ -51,11 +51,38 @@
     var shopDomain = '{{ shop.permanent_domain }}';
     var productId = '{{ product.id }}';
     var badgeStyle = '{{ block.settings.badge_style }}' || 'pill';
-    var proxyUrl = '/apps/carboniq/api/carbon-score';
+
+    // Try multiple methods to reach the API
+    var apiUrl = '/apps/carboniq/api/carbon-score'; // App Proxy (prod)
+    var fallbackUrl = null;
+
+    // In dev: find the tunnel URL from extension script tags
+    var allScripts = document.querySelectorAll('script[src]');
+    for (var i = 0; i < allScripts.length; i++) {
+      var src = allScripts[i].getAttribute('src') || '';
+      if (src.indexOf('.trycloudflare.com') !== -1 || src.indexOf('.ngrok') !== -1) {
+        var m = src.match(/https?:\/\/[^\/]+/);
+        if (m) { fallbackUrl = m[0] + '/api/carbon-score'; break; }
+      }
+    }
 
     wrapper.style.display = 'block';
 
-    fetch(proxyUrl + '?shop=' + encodeURIComponent(shopDomain) + '&product_id=' + encodeURIComponent(productId))
+    var queryStr = '?shop=' + encodeURIComponent(shopDomain) + '&product_id=' + encodeURIComponent(productId);
+
+    // Try primary URL, fallback to tunnel URL if it fails
+    var tryFetch = function(url) {
+      return fetch(url + queryStr).then(function(res) {
+        if (!res.ok) throw new Error('not ok');
+        return res.json();
+      });
+    };
+
+    var fetchPromise = fallbackUrl
+      ? tryFetch(fallbackUrl).catch(function() { return tryFetch(apiUrl); })
+      : tryFetch(apiUrl);
+
+    fetchPromise
       .then(function(res) { return res.json(); })
       .then(function(data) {
         if (data.display === 'none' || !data.badge) {
