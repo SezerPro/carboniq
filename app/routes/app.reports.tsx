@@ -5,7 +5,6 @@ import type {
   LoaderFunctionArgs,
 } from "react-router";
 import { useLoaderData, useFetcher } from "react-router";
-import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
@@ -47,7 +46,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     const now = new Date();
     let periodStart: Date;
-    let periodEnd = now;
+    const periodEnd = now;
 
     if (period === "ANNUAL") {
       periodStart = new Date(now.getFullYear(), 0, 1);
@@ -117,7 +116,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const report = await db.rSEReport.create({
       data: {
         shopId: shop.id,
-        period: period as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      period: period as any,
         periodStart,
         periodEnd,
         dataJson,
@@ -139,8 +139,6 @@ const PERIOD_LABELS: Record<string, string> = {
 export default function Reports() {
   const { reports, shopName } = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
-  const shopify = useAppBridge();
-
   const isGenerating = fetcher.state !== "idle";
 
   const handleGenerate = useCallback((period: string) => {
@@ -148,7 +146,7 @@ export default function Reports() {
   }, [fetcher]);
 
   return (
-    <s-page heading="Rapports RSE" backAction={{ url: "/app" }}>
+    <s-page heading="Rapports RSE">
 
       {/* Generate buttons */}
       <div style={{
@@ -218,8 +216,9 @@ export default function Reports() {
         ) : (
           <div>
             {reports.map((report, i) => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               let data: any = {};
-              try { data = JSON.parse(report.dataJson); } catch {}
+              try { data = JSON.parse(report.dataJson); } catch { /* ignore parse errors */ }
               const summary = data.summary ?? {};
 
               return (

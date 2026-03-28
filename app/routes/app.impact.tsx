@@ -130,9 +130,9 @@ export default function ImpactPortal() {
 
   if (!shop || !stats) {
     return (
-      <s-page heading="Portail d'Impact Public" backAction={{ url: "/app" }}>
+      <s-page heading="Portail d'Impact Public">
         <s-section>
-          <s-paragraph>Installez d'abord l'app depuis le dashboard.</s-paragraph>
+          <s-paragraph>Installez d&#39;abord l&#39;app depuis le dashboard.</s-paragraph>
         </s-section>
       </s-page>
     );
@@ -141,7 +141,7 @@ export default function ImpactPortal() {
   const maxTrend = Math.max(...trend.map((t) => t.offsetKg), 1);
 
   return (
-    <s-page heading="Portail d'Impact Public" backAction={{ url: "/app" }}>
+    <s-page heading="Portail d'Impact Public">
       {/* ── Public URL bar ── */}
       <div style={{ ...card, padding: 20, marginBottom: 20 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>

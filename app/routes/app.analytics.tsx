@@ -105,16 +105,6 @@ const card = {
   overflow: "hidden" as const,
 };
 
-const cardHeader = (accent: string) => ({
-  padding: "16px 20px",
-  borderBottom: "1px solid #f3f4f6",
-  display: "flex" as const,
-  alignItems: "center" as const,
-  gap: 10,
-  position: "relative" as const,
-  overflow: "hidden" as const,
-});
-
 const LABEL_COLORS: Record<string, { color: string; bg: string; border: string }> = {
   LOW: { color: "#16a34a", bg: "#dcfce7", border: "#bbf7d0" },
   MEDIUM: { color: "#d97706", bg: "#fef3c7", border: "#fde68a" },
@@ -131,9 +121,9 @@ export default function Analytics() {
 
   if (!analytics) {
     return (
-      <s-page heading="Analytiques" backAction={{ url: "/app" }}>
+      <s-page heading="Analytiques">
         <s-section>
-          <s-paragraph>Installez d'abord l'app depuis le dashboard.</s-paragraph>
+          <s-paragraph>Installez d&#39;abord l&#39;app depuis le dashboard.</s-paragraph>
         </s-section>
       </s-page>
     );
@@ -145,7 +135,7 @@ export default function Analytics() {
     : 0;
 
   return (
-    <s-page heading="Analytiques" backAction={{ url: "/app" }}>
+    <s-page heading="Analytiques">
       {/* ── Hero metrics ── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 20 }}>
         <MetricCard accent="#059669" label="Empreinte totale" value={`${analytics.totalCarbonKg.toFixed(1)} kg`} sub="CO₂ tous produits" />

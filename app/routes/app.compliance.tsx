@@ -35,6 +35,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const highWeight = 15;
   const mediumWeight = 5;
   const lowWeight = 2;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const penalty = findings.reduce((sum: number, f: any) => {
     if (f.severity === "critical") return sum + criticalWeight;
     if (f.severity === "high") return sum + highWeight;
@@ -94,9 +95,13 @@ export default function Compliance() {
   const navigation = useNavigation();
   const isScanning = navigation.state === "submitting";
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const scan = (data as any)?.scan ?? null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const templates = (data as any)?.templates ?? [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const history = (data as any)?.history ?? [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const score = (data as any)?.score ?? 100;
 
   const findings = scan?.findings ?? [];
@@ -118,7 +123,7 @@ export default function Compliance() {
   const scoreBg = score >= 90 ? "#dcfce7" : score >= 70 ? "#fef3c7" : "#fee2e2";
 
   return (
-    <s-page heading="Conformite EU — Green Claims" backAction={{ url: "/app" }}>
+    <s-page heading="Conformite EU — Green Claims">
 
       {/* ── ROW 1: Countdown + Score ── */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 20 }}>
@@ -235,6 +240,7 @@ export default function Compliance() {
                 </div>
               </div>
               <div>
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {findings.map((finding: any, i: number) => {
                   const cfg = SEVERITY_CONFIG[finding.severity] ?? SEVERITY_CONFIG.info;
                   return (
@@ -264,7 +270,7 @@ export default function Compliance() {
                           backgroundColor: "#fee2e2", padding: "2px 8px", borderRadius: 4,
                           fontFamily: "monospace",
                         }}>
-                          "{finding.term}"
+                          &quot;{finding.term}&quot;
                         </span>
                         {/* Source */}
                         <span style={{ fontSize: 12, color: "#9ca3af" }}>
@@ -335,6 +341,7 @@ export default function Compliance() {
               </tr>
             </thead>
             <tbody>
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               {templates.map((t: any, i: number) => (
                 <tr key={i} style={{ borderBottom: "1px solid #f9fafb" }}>
                   <td style={{ padding: "12px 16px", fontWeight: 600, color: "#374151" }}>
@@ -378,6 +385,7 @@ export default function Compliance() {
             <div style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>Historique des scans</div>
           </div>
           <div style={{ padding: "4px 0" }}>
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             {history.map((h: any, i: number) => (
               <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 20px", borderBottom: i < history.length - 1 ? "1px solid #f9fafb" : "none" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

@@ -5,7 +5,6 @@ import type {
   LoaderFunctionArgs,
 } from "react-router";
 import { useLoaderData, useFetcher } from "react-router";
-import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
@@ -128,7 +127,6 @@ const CATEGORY_ICONS: Record<string, string> = {
 export default function Reduction() {
   const { tips, progress } = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
-  const shopify = useAppBridge();
   const isRegenerating =
     fetcher.state !== "idle" &&
     fetcher.formData?.get("intent") === "regenerate";
@@ -150,7 +148,7 @@ export default function Reduction() {
       : 0;
 
   return (
-    <s-page heading="Réduire l'empreinte" backAction={{ url: "/app" }}>
+    <s-page heading="Réduire l'empreinte">
       <s-button
         slot="primary-action"
         onClick={handleRegenerate}
@@ -504,7 +502,7 @@ export default function Reduction() {
             Elles ne constituent pas une mesure réelle de réduction. Les économies effectives dépendent
             de la mise en œuvre concrète par le marchand. Conformément à la directive EU 2024/825 (EmpCo),
             aucune claim environnementale ne doit être communiquée aux clients sans preuve vérifiable.
-            Le bouton "M'engager" enregistre une intention, pas une action vérifiée.
+            Le bouton &quot;M&#39;engager&quot; enregistre une intention, pas une action vérifiée.
           </div>
         </div>
       </div>
@@ -529,7 +527,7 @@ export default function Reduction() {
               marginBottom: 8,
             }}
           >
-            Score d'engagement : {progress.reductionScore}/100
+            Score d&#39;engagement : {progress.reductionScore}/100
           </div>
           <div
             style={{

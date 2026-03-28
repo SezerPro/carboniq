@@ -50,10 +50,10 @@ export default function BenchmarkPage() {
 
   if (!benchmark) {
     return (
-      <s-page heading="Benchmarking" backAction={{ url: "/app" }}>
+      <s-page heading="Benchmarking">
         <s-section>
           <s-paragraph>
-            Installez d'abord l'app depuis le dashboard.
+            Installez d&#39;abord l&#39;app depuis le dashboard.
           </s-paragraph>
         </s-section>
       </s-page>
@@ -78,7 +78,7 @@ export default function BenchmarkPage() {
   recommendations.sort((a, b) => b.gap - a.gap);
 
   return (
-    <s-page heading="Benchmarking" backAction={{ url: "/app" }}>
+    <s-page heading="Benchmarking">
       {/* ── Hero gauge ── */}
       <div
         style={{
@@ -683,7 +683,7 @@ export default function BenchmarkPage() {
             <div
               style={{ fontSize: 14, fontWeight: 600, color: "#92400e" }}
             >
-              Pistes d'amelioration
+              Pistes d&#39;amelioration
             </div>
             <div
               style={{

@@ -28,6 +28,7 @@ const PRODUCT_LIMITS: Record<PlanTier, number> = {
  * Returns the confirmation URL where the merchant approves the charge.
  */
 export async function createSubscription(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   admin: any,
   plan: Exclude<PlanTier, "FREE">,
   shopDomain: string,
@@ -91,6 +92,7 @@ export async function createSubscription(
   const data = json.data?.appSubscriptionCreate;
 
   if (data?.userErrors?.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return { error: data.userErrors.map((e: any) => e.message).join(", ") };
   }
 
@@ -107,6 +109,7 @@ export async function createSubscription(
 /**
  * Check the current active subscription status from Shopify.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function getActiveSubscription(admin: any): Promise<{
   id: string;
   name: string;
@@ -147,6 +150,7 @@ export async function getActiveSubscription(admin: any): Promise<{
 /**
  * Cancel the current subscription.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function cancelSubscription(admin: any, subscriptionId: string): Promise<boolean> {
   const response = await admin.graphql(
     `#graphql
@@ -172,6 +176,7 @@ export async function cancelSubscription(admin: any, subscriptionId: string): Pr
 /**
  * After merchant approves, sync the plan to our database.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function syncPlanFromShopify(admin: any, shopDomain: string): Promise<PlanTier> {
   const activeSub = await getActiveSubscription(admin);
 
@@ -199,7 +204,9 @@ export async function syncPlanFromShopify(admin: any, shopDomain: string): Promi
   await db.shop.update({
     where: { id: shop.id },
     data: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       plan: plan === "FREE" ? "STARTER" : plan as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       planStatus: status as any,
     },
   });
@@ -209,13 +216,17 @@ export async function syncPlanFromShopify(admin: any, shopDomain: string): Promi
     where: { shopId: shop.id },
     create: {
       shopId: shop.id,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       plan: plan === "FREE" ? "STARTER" : plan as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       status: status as any,
       shopifyChargeId: activeSub.id,
       productLimit: PRODUCT_LIMITS[plan],
     },
     update: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       plan: plan === "FREE" ? "STARTER" : plan as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       status: status as any,
       shopifyChargeId: activeSub.id,
       productLimit: PRODUCT_LIMITS[plan],

@@ -26,6 +26,7 @@ interface ComplianceFinding {
 }
 
 // Scan product titles and descriptions for banned claims
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function scanShopCompliance(shopId: string, admin: any): Promise<{
   findings: ComplianceFinding[];
   totalProducts: number;
@@ -39,7 +40,8 @@ export async function scanShopCompliance(shopId: string, admin: any): Promise<{
   let totalProducts = 0;
 
   while (hasNextPage) {
-    const response = await admin.graphql(`#graphql
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const response: any = await admin.graphql(`#graphql
       query($cursor: String) {
         products(first: 50, after: $cursor) {
           edges {
@@ -56,8 +58,10 @@ export async function scanShopCompliance(shopId: string, admin: any): Promise<{
       }
     `, { variables: { cursor } });
 
-    const json = await response.json();
-    const edges = json.data?.products?.edges ?? [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const json: any = await response.json();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const edges: any[] = json.data?.products?.edges ?? [];
     hasNextPage = json.data?.products?.pageInfo?.hasNextPage ?? false;
 
     for (const edge of edges) {
@@ -98,7 +102,8 @@ export async function scanShopCompliance(shopId: string, admin: any): Promise<{
   let collectionsCursor: string | null = null;
   let hasMoreCollections = true;
   while (hasMoreCollections) {
-    const colResponse = await admin.graphql(`#graphql
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const colResponse: any = await admin.graphql(`#graphql
       query($cursor: String) {
         collections(first: 50, after: $cursor) {
           edges { node { id title descriptionHtml } cursor }
@@ -106,8 +111,10 @@ export async function scanShopCompliance(shopId: string, admin: any): Promise<{
         }
       }
     `, { variables: { cursor: collectionsCursor } });
-    const colJson = await colResponse.json();
-    const colEdges = colJson.data?.collections?.edges ?? [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const colJson: any = await colResponse.json();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const colEdges: any[] = colJson.data?.collections?.edges ?? [];
     hasMoreCollections = colJson.data?.collections?.pageInfo?.hasNextPage ?? false;
     for (const edge of colEdges) {
       const node = edge.node;
@@ -136,7 +143,8 @@ export async function scanShopCompliance(shopId: string, admin: any): Promise<{
   let pagesCursor: string | null = null;
   let hasMorePages = true;
   while (hasMorePages) {
-    const pgResponse = await admin.graphql(`#graphql
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pgResponse: any = await admin.graphql(`#graphql
       query($cursor: String) {
         pages(first: 50, after: $cursor) {
           edges { node { id title body } cursor }
@@ -144,8 +152,10 @@ export async function scanShopCompliance(shopId: string, admin: any): Promise<{
         }
       }
     `, { variables: { cursor: pagesCursor } });
-    const pgJson = await pgResponse.json();
-    const pgEdges = pgJson.data?.pages?.edges ?? [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pgJson: any = await pgResponse.json();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pgEdges: any[] = pgJson.data?.pages?.edges ?? [];
     hasMorePages = pgJson.data?.pages?.pageInfo?.hasNextPage ?? false;
     for (const edge of pgEdges) {
       const node = edge.node;

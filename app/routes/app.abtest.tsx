@@ -159,7 +159,7 @@ export default function ABTestPage() {
   const isSubmitting = fetcher.state !== "idle";
 
   return (
-    <s-page heading="A/B Testing" backAction={{ url: "/app" }}>
+    <s-page heading="A/B Testing">
       <s-button
         slot="primary-action"
         onClick={() => setShowCreate(!showCreate)}
@@ -212,12 +212,12 @@ export default function ABTestPage() {
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
                 <div>
-                  <label style={labelStyle}>Nom du test</label>
-                  <input name="name" placeholder="Ex: Badge vert vs badge bleu" required style={inputStyle} />
+                  <label htmlFor="abtest-name" style={labelStyle}>Nom du test</label>
+                  <input id="abtest-name" name="name" placeholder="Ex: Badge vert vs badge bleu" required style={inputStyle} />
                 </div>
                 <div>
-                  <label style={labelStyle}>Type de test</label>
-                  <select name="testType" required style={inputStyle}>
+                  <label htmlFor="abtest-type" style={labelStyle}>Type de test</label>
+                  <select id="abtest-type" name="testType" required style={inputStyle}>
                     <option value="badge_style">Badge style</option>
                     <option value="offset_placement">Offset placement</option>
                     <option value="messaging">Messaging</option>
@@ -228,12 +228,12 @@ export default function ABTestPage() {
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
                 <div>
-                  <label style={labelStyle}>Variant A (JSON)</label>
-                  <textarea name="variantA" required rows={4} placeholder='{"style":"pill","showScore":true}' style={{ ...inputStyle, fontFamily: "monospace", resize: "vertical" }} />
+                  <label htmlFor="abtest-variantA" style={labelStyle}>Variant A (JSON)</label>
+                  <textarea id="abtest-variantA" name="variantA" required rows={4} placeholder='{"style":"pill","showScore":true}' style={{ ...inputStyle, fontFamily: "monospace", resize: "vertical" }} />
                 </div>
                 <div>
-                  <label style={labelStyle}>Variant B (JSON)</label>
-                  <textarea name="variantB" required rows={4} placeholder='{"style":"leaf","showScore":true}' style={{ ...inputStyle, fontFamily: "monospace", resize: "vertical" }} />
+                  <label htmlFor="abtest-variantB" style={labelStyle}>Variant B (JSON)</label>
+                  <textarea id="abtest-variantB" name="variantB" required rows={4} placeholder='{"style":"leaf","showScore":true}' style={{ ...inputStyle, fontFamily: "monospace", resize: "vertical" }} />
                 </div>
               </div>
 
@@ -338,8 +338,9 @@ type TestData = {
 };
 
 function BadgePreview({ label, config, color }: { label: string; config: string; color: string }) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let parsed: Record<string, any> = {};
-  try { parsed = JSON.parse(config); } catch {}
+  try { parsed = JSON.parse(config); } catch { /* ignore parse errors */ }
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
       <span style={{ width: 8, height: 8, borderRadius: 2, background: color, flexShrink: 0 }} />

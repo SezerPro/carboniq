@@ -4,7 +4,6 @@ import type {
   LoaderFunctionArgs,
 } from "react-router";
 import { useLoaderData, useFetcher } from "react-router";
-import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
@@ -49,6 +48,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const shop = await db.shop.findUnique({ where: { shopDomain: session.shop } });
   if (!shop) return { error: "Shop not found" };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updates: Record<string, any> = {};
 
   // Badge settings
@@ -99,11 +99,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function Settings() {
   const { shop } = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
-  const shopify = useAppBridge();
-
   if (!shop) {
     return (
-      <s-page heading="Paramètres" backAction={{ url: "/app" }}>
+      <s-page heading="Paramètres">
         <s-section><s-paragraph>Boutique non trouvée.</s-paragraph></s-section>
       </s-page>
     );
@@ -112,7 +110,7 @@ export default function Settings() {
   const isSaving = fetcher.state !== "idle";
 
   return (
-    <s-page heading="Paramètres" backAction={{ url: "/app" }}>
+    <s-page heading="Paramètres">
 
       {/* Language Settings */}
       <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb", marginBottom: 20, overflow: "hidden" }}>
@@ -122,7 +120,7 @@ export default function Settings() {
         </div>
         <fetcher.Form method="POST" style={{ padding: 20 }}>
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Langue de l'interface</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Langue de l&#39;interface</div>
             <select name="locale" defaultValue={shop.locale ?? "auto"} style={selectStyle}>
               <option value="auto">Automatique (navigateur)</option>
               <option value="en">🇬🇧 English</option>
@@ -135,7 +133,7 @@ export default function Settings() {
               <option value="ja">🇯🇵 日本語</option>
             </select>
             <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 6 }}>
-              En mode automatique, la langue est detectee depuis votre navigateur. Choisissez une langue manuellement pour forcer l'affichage.
+              En mode automatique, la langue est detectee depuis votre navigateur. Choisissez une langue manuellement pour forcer l&#39;affichage.
             </div>
           </div>
           <button type="submit" disabled={isSaving} style={btnStyle}>

@@ -111,7 +111,7 @@ export default function Pricing() {
   };
 
   return (
-    <s-page heading="Choisir votre plan" backAction={{ url: "/app" }}>
+    <s-page heading="Choisir votre plan">
       <style dangerouslySetInnerHTML={{ __html: `
         .cq-pricing-wrap{width:100%;max-width:100%;margin:0 auto}
         .cq-pricing{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px}

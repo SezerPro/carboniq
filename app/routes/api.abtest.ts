@@ -7,7 +7,7 @@ import {
   recordConversion,
 } from "../lib/abtest/abtest.server";
 
-import { CORS_PUBLIC, getCorsWriteHeaders, checkRateLimit } from "../lib/security/api-auth.server";
+import { CORS_PUBLIC, getCorsWriteHeaders } from "../lib/security/api-auth.server";
 
 /**
  * GET /api/abtest?shop=xxx&test_type=badge_style

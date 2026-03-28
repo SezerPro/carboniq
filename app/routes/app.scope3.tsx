@@ -122,10 +122,10 @@ export default function Scope3Page() {
 
   if (!summary) {
     return (
-      <s-page heading="Scope 3 — Supply Chain" backAction={{ url: "/app" }}>
+      <s-page heading="Scope 3 — Supply Chain">
         <s-section>
           <s-paragraph>
-            Installez d'abord l'app depuis le dashboard.
+            Installez d&#39;abord l&#39;app depuis le dashboard.
           </s-paragraph>
         </s-section>
       </s-page>
@@ -143,7 +143,7 @@ export default function Scope3Page() {
   const totalScope3Kg = summary.scope3.totalKg;
 
   return (
-    <s-page heading="Scope 3 — Supply Chain" backAction={{ url: "/app" }}>
+    <s-page heading="Scope 3 — Supply Chain">
       {/* ── Info banner ── */}
       <div
         style={{
@@ -170,7 +170,7 @@ export default function Scope3Page() {
             Le Scope 3 couvre les emissions indirectes de votre chaine de valeur
             : transport des matieres premieres, livraison aux clients, emballage
             et fin de vie des produits. Il represente souvent 70 a 90% de
-            l'empreinte totale d'une entreprise.
+            l&#39;empreinte totale d&#39;une entreprise.
           </div>
           <div
             style={{
@@ -372,6 +372,7 @@ export default function Scope3Page() {
           {categories.map(([cat, data]) => {
             const pct =
               totalScope3Kg > 0
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 ? ((data as any).totalKg / totalScope3Kg) * 100
                 : 0;
             const meta = CATEGORY_META[cat] ?? {
@@ -429,6 +430,7 @@ export default function Scope3Page() {
                       color: meta.color,
                     }}
                   >
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                     {(data as any).totalKg.toFixed(1)} kg ({pct.toFixed(0)}%)
                   </span>
                 </div>
@@ -448,6 +450,7 @@ export default function Scope3Page() {
                       backgroundColor: meta.color,
                       borderRadius: 4,
                       transition: "width 0.5s ease",
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
                       minWidth: (data as any).totalKg > 0 ? 4 : 0,
                     }}
                   />
@@ -502,6 +505,7 @@ export default function Scope3Page() {
             </button>
           </fetcher.Form>
         </div>
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         {fetcher.data && (fetcher.data as any).success && (fetcher.data as any).totalKg !== undefined && (
           <div
             style={{
@@ -515,6 +519,7 @@ export default function Scope3Page() {
               fontWeight: 500,
             }}
           >
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             Estimation terminee : {(fetcher.data as any).totalKg} kg CO2 estimes pour le Scope 3.
           </div>
         )}
@@ -545,6 +550,7 @@ export default function Scope3Page() {
             >
               <div>
                 <label
+                  htmlFor="scope3-category"
                   style={{
                     display: "block",
                     fontSize: 12,
@@ -556,6 +562,7 @@ export default function Scope3Page() {
                   Categorie
                 </label>
                 <select
+                  id="scope3-category"
                   name="category"
                   required
                   style={{
@@ -576,6 +583,7 @@ export default function Scope3Page() {
               </div>
               <div>
                 <label
+                  htmlFor="scope3-emissionKg"
                   style={{
                     display: "block",
                     fontSize: 12,
@@ -587,6 +595,7 @@ export default function Scope3Page() {
                   Emission (kg CO2)
                 </label>
                 <input
+                  id="scope3-emissionKg"
                   type="number"
                   name="emissionKg"
                   step="0.01"
@@ -605,6 +614,7 @@ export default function Scope3Page() {
               </div>
               <div>
                 <label
+                  htmlFor="scope3-source"
                   style={{
                     display: "block",
                     fontSize: 12,
@@ -616,6 +626,7 @@ export default function Scope3Page() {
                   Source / Description
                 </label>
                 <input
+                  id="scope3-source"
                   type="text"
                   name="source"
                   required
@@ -648,6 +659,7 @@ export default function Scope3Page() {
               Ajouter
             </button>
           </fetcher.Form>
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           {fetcher.data && (fetcher.data as any).error && (
             <div
               style={{
@@ -660,6 +672,7 @@ export default function Scope3Page() {
                 color: "#dc2626",
               }}
             >
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               {(fetcher.data as any).error}
             </div>
           )}
@@ -875,7 +888,7 @@ export default function Scope3Page() {
           {scope3Pct > 50 && (
             <span>
               {" "}
-              Concentrez vos efforts sur la chaine d'approvisionnement pour un
+              Concentrez vos efforts sur la chaine d&#39;approvisionnement pour un
               impact maximal.
             </span>
           )}

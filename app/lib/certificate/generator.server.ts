@@ -71,18 +71,16 @@ export async function createCertificate(offsetId: string) {
  */
 export async function getCertificateByCode(code: string) {
   const certificate = await prisma.certificate.findUnique({
-    where: { code },
+    where: { uniqueCode: code },
     include: {
       offset: {
         include: {
           shop: {
             select: {
               name: true,
-              domain: true,
-              logoUrl: true,
+              shopDomain: true,
             },
           },
-          impactActions: true,
         },
       },
     },
@@ -104,11 +102,9 @@ export async function generateCertificateHTML(certificateId: string) {
           shop: {
             select: {
               name: true,
-              domain: true,
-              logoUrl: true,
+              shopDomain: true,
             },
           },
-          impactActions: true,
         },
       },
     },
@@ -116,22 +112,21 @@ export async function generateCertificateHTML(certificateId: string) {
 
   const shop = certificate.offset.shop;
   const offset = certificate.offset;
-  const actions = offset.impactActions ?? [];
-  const treesAction = actions.find((a) => a.type === "TREE");
-  const oceanAction = actions.find((a) => a.type === "OCEAN");
+  const treesPlanted = certificate.treesPlanted > 0;
+  const oceanCleanup = certificate.oceanKg > 0;
   const dateStr = new Date(certificate.createdAt).toLocaleDateString("en-GB", {
     year: "numeric",
     month: "long",
     day: "numeric",
   });
-  const verifyUrl = `https://${shop.domain ?? "app.carboniq.dev"}/api/certificate/${certificate.code}`;
+  const verifyUrl = `https://${shop?.shopDomain ?? "app.carboniq.dev"}/apps/carboniq/api/certificate/${certificate.uniqueCode}`;
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Carbon Offset Certificate - ${certificate.code}</title>
+  <title>Carbon Offset Certificate - ${certificate.uniqueCode}</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -269,9 +264,8 @@ export async function generateCertificateHTML(certificateId: string) {
 <body>
   <div class="certificate">
     <div class="header">
-      ${shop.logoUrl ? `<img class="logo" src="${shop.logoUrl}" alt="${shop.name}" />` : ""}
       <h1>Carbon Offset Certificate</h1>
-      <div class="subtitle">Issued by ${shop.name ?? "Carboniq"} via Carboniq</div>
+      <div class="subtitle">Issued by ${shop?.name ?? "Carboniq"} via Carboniq</div>
     </div>
 
     <div class="section" style="text-align:center;">
@@ -291,7 +285,7 @@ export async function generateCertificateHTML(certificateId: string) {
         </div>
         <div class="detail-item">
           <div class="label">Amount</div>
-          <div class="value">${certificate.amountEur.toFixed(2)} EUR</div>
+          <div class="value">${offset.amountEur.toFixed(2)} EUR</div>
         </div>
         <div class="detail-item">
           <div class="label">Date</div>
@@ -301,12 +295,12 @@ export async function generateCertificateHTML(certificateId: string) {
     </div>
 
     ${
-      treesAction || oceanAction
+      treesPlanted || oceanCleanup
         ? `<div class="section">
       <div class="section-title" style="text-align:center;">Impact Actions</div>
       <div class="impact-badges">
-        ${treesAction ? '<div class="badge">&#127794; Tree Planting</div>' : ""}
-        ${oceanAction ? '<div class="badge">&#127754; Ocean Plastic Removal</div>' : ""}
+        ${treesPlanted ? '<div class="badge">&#127794; Tree Planting</div>' : ""}
+        ${oceanCleanup ? '<div class="badge">&#127754; Ocean Plastic Removal</div>' : ""}
       </div>
     </div>`
         : ""
@@ -314,7 +308,7 @@ export async function generateCertificateHTML(certificateId: string) {
 
     <div class="footer">
       <div class="qr-placeholder">QR: ${verifyUrl}</div>
-      <div class="code">${certificate.code}</div>
+      <div class="code">${certificate.uniqueCode}</div>
       <div>Verify at ${verifyUrl}</div>
       <div style="margin-top:0.75rem;">Powered by Carboniq &mdash; Carbon offsetting for e-commerce</div>
     </div>

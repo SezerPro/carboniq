@@ -17,7 +17,7 @@ import { getPlanTier } from "../lib/plans/gates.server";
 // ── Loader ─────────────────────────────────────────────
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { admin, session } = await authenticate.admin(request);
+  const { session } = await authenticate.admin(request);
 
   const shop = await db.shop.findUnique({
     where: { shopDomain: session.shop },
@@ -99,7 +99,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     let processed = 0;
 
     while (hasNextPage) {
-      const response = await admin.graphql(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const response: any = await admin.graphql(
         `#graphql
         query getProducts($cursor: String) {
           products(first: 50, after: $cursor) {
@@ -135,8 +136,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         { variables: { cursor } },
       );
 
-      const json = await response.json();
-      const edges = json.data?.products?.edges ?? [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const json: any = await response.json();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const edges: any[] = json.data?.products?.edges ?? [];
       hasNextPage = json.data?.products?.pageInfo?.hasNextPage ?? false;
 
       for (const edge of edges) {
@@ -445,7 +448,7 @@ export default function Index() {
             const feature = FEATURES[m.gate];
             const locked = feature ? !hasAccess(plan, feature.requiredPlan) : false;
             return (
-              <div key={i} className="cq-mod" onClick={() => navigate(locked ? "/app/pricing" : m.r)} role="button" tabIndex={0}
+              <div key={i} className="cq-mod" onClick={() => navigate(locked ? "/app/pricing" : m.r)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") navigate(locked ? "/app/pricing" : m.r); }} role="button" tabIndex={0}
                 style={locked ? { opacity: 0.6 } : undefined}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <div className="cq-mod-icon" style={{ background: m.bg, color: m.color }} dangerouslySetInnerHTML={{ __html: m.icon }} />
@@ -478,7 +481,7 @@ export default function Index() {
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "48px 24px", textAlign: "center" }}>
               <div style={{ width: 52, height: 52, borderRadius: 14, background: "#f0fdf4", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, marginBottom: 14, border: "1px solid #bbf7d0" }}>🌱</div>
               <div style={{ fontSize: 15, fontWeight: 600, color: "#1a1612", marginBottom: 4 }}>Aucun produit analysé</div>
-              <div style={{ fontSize: 13, color: "#5e574f", maxWidth: 300, lineHeight: 1.5 }}>Cliquez sur "Recalculer tout" pour lancer l'analyse.</div>
+              <div style={{ fontSize: 13, color: "#5e574f", maxWidth: 300, lineHeight: 1.5 }}>Cliquez sur &quot;Recalculer tout&quot; pour lancer l&#39;analyse.</div>
             </div>
           ) : (
             <table className="cq-tbl">

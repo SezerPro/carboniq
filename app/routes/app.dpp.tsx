@@ -218,7 +218,7 @@ const DPP_CATEGORIES = [
 // -- Component --
 
 export default function DPP() {
-  const { products, shopDomain } = useLoaderData<typeof loader>();
+  const { products } = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
   const shopify = useAppBridge();
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
@@ -247,7 +247,6 @@ export default function DPP() {
   return (
     <s-page
       heading="Passeport Produit Digital (DPP)"
-      backAction={{ url: "/app" }}
     >
       <s-button
         slot="primary-action"
@@ -287,7 +286,7 @@ export default function DPP() {
             >
               Le Passeport Numérique Produit (ESPR 2024/1781) sera
               obligatoire dès 2027 pour le textile et progressivement pour
-              d'autres secteurs. Carboniq génère automatiquement les fiches
+              d&#39;autres secteurs. Carboniq génère automatiquement les fiches
               environnementales conformes avec QR code vérifiable pour
               chacun de vos produits.
             </div>
@@ -421,8 +420,8 @@ export default function DPP() {
                         style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 13, boxSizing: "border-box" }} />
                     </div>
                     <div>
-                      {i === 0 && <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "#374151", marginBottom: 4 }}>%</label>}
-                      <input name="mat_pct" type="number" step="any" defaultValue={m.percentage > 0 ? m.percentage : ""}
+                      {i === 0 && <label htmlFor={`mat_pct_${i}`} style={{ display: "block", fontSize: 12, fontWeight: 500, color: "#374151", marginBottom: 4 }}>%</label>}
+                      <input id={`mat_pct_${i}`} name="mat_pct" type="number" step="any" defaultValue={m.percentage > 0 ? m.percentage : ""}
                         placeholder="60" style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 13, boxSizing: "border-box" }} />
                     </div>
                     <div style={{ paddingBottom: 2 }}>
@@ -445,8 +444,8 @@ export default function DPP() {
             <SectionTitle icon="♻️" text="Recyclabilité & fin de vie" />
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "#374151", marginBottom: 4 }}>Recyclabilité</label>
-                <select name="recyclability" defaultValue={editProduct.dppRecyclability ?? ""} style={selectStyle}>
+                <label htmlFor="dpp-recyclability" style={{ display: "block", fontSize: 12, fontWeight: 500, color: "#374151", marginBottom: 4 }}>Recyclabilité</label>
+                <select id="dpp-recyclability" name="recyclability" defaultValue={editProduct.dppRecyclability ?? ""} style={selectStyle}>
                   <option value="">— Sélectionner —</option>
                   <option value="Entièrement recyclable">Entièrement recyclable</option>
                   <option value="Partiellement recyclable">Partiellement recyclable</option>
@@ -458,8 +457,8 @@ export default function DPP() {
                 </select>
               </div>
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "#374151", marginBottom: 4 }}>Instructions fin de vie</label>
-                <select name="endoflife" defaultValue={editProduct.dppEndOfLife ?? ""} style={selectStyle}>
+                <label htmlFor="dpp-endoflife" style={{ display: "block", fontSize: 12, fontWeight: 500, color: "#374151", marginBottom: 4 }}>Instructions fin de vie</label>
+                <select id="dpp-endoflife" name="endoflife" defaultValue={editProduct.dppEndOfLife ?? ""} style={selectStyle}>
                   <option value="">— Sélectionner —</option>
                   {catConfig.endOfLifeOptions.map((o) => <option key={o} value={o}>{o}</option>)}
                 </select>
@@ -491,8 +490,8 @@ export default function DPP() {
                   <Field label="Indice de réparabilité (0-10)" name="repairability" value={editProduct.dppRepairabilityIdx?.toString()} placeholder="7.2" type="number" />
                   <Field label="Pièces détachées (années)" name="spareparts" value={editProduct.dppSparePartsYears?.toString()} placeholder="5" type="number" />
                   <div>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "#374151", marginBottom: 4 }}>Classe énergie</label>
-                    <select name="energyclass" defaultValue={editProduct.dppEnergyClass ?? ""} style={selectStyle}>
+                    <label htmlFor="dpp-energyclass" style={{ display: "block", fontSize: 12, fontWeight: 500, color: "#374151", marginBottom: 4 }}>Classe énergie</label>
+                    <select id="dpp-energyclass" name="energyclass" defaultValue={editProduct.dppEnergyClass ?? ""} style={selectStyle}>
                       <option value="">—</option>
                       {["A", "B", "C", "D", "E", "F", "G"].map((c) => <option key={c} value={c}>{c}</option>)}
                     </select>
@@ -713,20 +712,26 @@ export default function DPP() {
                       {p.dppQrCodeUrl ? (
                         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                           <span
+                            role="button"
+                            tabIndex={0}
                             style={{ fontSize: 12, color: "#6366f1", cursor: "pointer", fontWeight: 500 }}
                             onClick={() => {
                               window.open(p.dppQrCodeUrl!, "_blank");
                             }}
+                            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") window.open(p.dppQrCodeUrl!, "_blank"); }}
                           >
                             Voir la fiche
                           </span>
                           <span style={{ color: "#d1d5db" }}>·</span>
                           <span
+                            role="button"
+                            tabIndex={0}
                             style={{ fontSize: 12, color: "#9ca3af", cursor: "pointer", fontWeight: 500 }}
                             onClick={() => {
                               navigator.clipboard.writeText(`${window.location.origin}${p.dppQrCodeUrl}`);
                               shopify.toast.show("Lien DPP copié !");
                             }}
+                            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { navigator.clipboard.writeText(`${window.location.origin}${p.dppQrCodeUrl}`); shopify.toast.show("Lien DPP copié !"); } }}
                           >
                             Copier
                           </span>

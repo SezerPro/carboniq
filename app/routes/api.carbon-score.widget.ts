@@ -173,14 +173,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const comparison = await getComparison(scoreKg, product.categoryCode);
 
     // Social proof: total offsets and customers for this shop
-    const offsetAgg = await prisma.offsetRecord.aggregate({
+    const offsetAgg = await prisma.carbonOffset.aggregate({
       where: { shopId: shop.id },
-      _sum: { amountKg: true },
+      _sum: { carbonKg: true },
       _count: { id: true },
     });
 
     const socialProof = {
-      totalOffsets: Math.round((offsetAgg._sum.amountKg ?? 0) * 100) / 100,
+      totalOffsets: Math.round((offsetAgg._sum.carbonKg ?? 0) * 100) / 100,
       totalCustomers: offsetAgg._count.id,
     };
 

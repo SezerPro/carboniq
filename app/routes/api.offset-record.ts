@@ -45,6 +45,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const certificate = await createCertificate(offset.id);
 
     return new Response(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       JSON.stringify({ offsetId: offset.id, certificateCode: (certificate as any).uniqueCode, certificateUrl: `/api/certificate/${(certificate as any).uniqueCode}` }),
       { status: 201, headers },
     );

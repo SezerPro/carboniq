@@ -136,6 +136,7 @@ export async function aiCategorize(product: {
 // Auto-categorize all products in a shop using AI
 export async function aiCategorizeShop(
   shopId: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   admin: any,
 ): Promise<{
   categorized: number;
@@ -159,7 +160,8 @@ export async function aiCategorizeShop(
   }> = [];
 
   while (hasNextPage) {
-    const response = await admin.graphql(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const response: any = await admin.graphql(
       `#graphql
       query($cursor: String) {
         products(first: 50, after: $cursor) {
@@ -181,8 +183,10 @@ export async function aiCategorizeShop(
       { variables: { cursor } },
     );
 
-    const json = await response.json();
-    const edges = json.data?.products?.edges ?? [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const json: any = await response.json();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const edges: any[] = json.data?.products?.edges ?? [];
     hasNextPage = json.data?.products?.pageInfo?.hasNextPage ?? false;
 
     for (const edge of edges) {

@@ -32,16 +32,16 @@ export async function calculateOffsetForOrder(
   const products = await prisma.product.findMany({
     where: {
       shopId,
-      productId: { in: productIds },
+      shopifyProductId: { in: productIds },
     },
     select: {
-      productId: true,
+      shopifyProductId: true,
       carbonScoreKg: true,
     },
   });
 
   const productMap = new Map(
-    products.map((p) => [p.productId, p.carbonScoreKg ?? 0]),
+    products.map((p) => [p.shopifyProductId, p.carbonScoreKg ?? 0]),
   );
 
   const shop = await prisma.shop.findUnique({
@@ -113,18 +113,18 @@ export async function recordOffset(params: {
   const impactActions: Array<{ type: string; label: string }> = [];
 
   if (shop?.enableTrees) {
-    impactActions.push({ type: "TREE" });
+    impactActions.push({ type: "TREE", label: "Tree planting" });
   }
 
   if (shop?.enableOcean) {
-    impactActions.push({ type: "OCEAN" });
+    impactActions.push({ type: "OCEAN", label: "Ocean cleanup" });
   }
 
   if (impactActions.length > 0) {
     await prisma.impactAction.createMany({
       data: impactActions.map((action) => ({
         shopId,
-        type: action.type as any,
+        type: action.type as "CARBON" | "TREE" | "OCEAN",
         quantity: action.type === "TREE" ? 1 : 0.5,
         costEur: action.type === "TREE" ? (shop?.treeCostEur ?? 0.4) : (shop?.oceanCostEur ?? 0.05),
         orderId,

@@ -5,13 +5,15 @@ const PLAN_NAMES: Record<PlanTier, string> = {
   FREE: "Free",
   STARTER: "Starter",
   GROWTH: "Growth",
+  PRO: "Pro",
   SCALE: "Scale",
 };
 
 const PLAN_PRICES: Record<PlanTier, string> = {
   FREE: "0€",
-  STARTER: "14,90€",
+  STARTER: "19,90€",
   GROWTH: "49,90€",
+  PRO: "89,90€",
   SCALE: "149,90€",
 };
 
@@ -19,6 +21,7 @@ const PLAN_COLORS: Record<PlanTier, { color: string; bg: string; border: string 
   FREE: { color: "#6b7280", bg: "#f3f4f6", border: "#e5e7eb" },
   STARTER: { color: "#1d4ed8", bg: "#dbeafe", border: "#93c5fd" },
   GROWTH: { color: "#166534", bg: "#dcfce7", border: "#86efac" },
+  PRO: { color: "#7c3aed", bg: "#ede9fe", border: "#c4b5fd" },
   SCALE: { color: "#92400e", bg: "#fef3c7", border: "#fde68a" },
 };
 

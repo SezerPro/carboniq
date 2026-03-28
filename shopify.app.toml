@@ -2,7 +2,7 @@
 
 client_id = "83fa1af392157c68b11d0668cf4a4010"
 name = "carboniq"
-application_url = "https://example.com"
+application_url = "https://carboniq-sigma.vercel.app"
 embedded = true
 
 [build]
@@ -34,7 +34,7 @@ api_version = "2026-04"
 
 
 [app_proxy]
-url = "https://example.com"
+url = "https://carboniq-sigma.vercel.app"
 subpath = "carboniq"
 prefix = "apps"
 
@@ -43,7 +43,7 @@ prefix = "apps"
 scopes = "read_products,write_products,write_metaobject_definitions,write_metaobjects"
 
 [auth]
-redirect_urls = [ "https://example.com/api/auth" ]
+redirect_urls = [ "https://carboniq-sigma.vercel.app/auth/callback" ]
 
 [product.metafields.app.demo_info]
 type = "single_line_text_field"

@@ -158,9 +158,9 @@ export default function ROIDashboard() {
 
   if (!data.hasData) {
     return (
-      <s-page heading="ROI & Performance" backAction={{ url: "/app" }}>
+      <s-page heading="ROI & Performance">
         <s-section>
-          <s-paragraph>Installez d'abord l'app depuis le dashboard.</s-paragraph>
+          <s-paragraph>Installez d&#39;abord l&#39;app depuis le dashboard.</s-paragraph>
         </s-section>
       </s-page>
     );
@@ -171,7 +171,7 @@ export default function ROIDashboard() {
   const maxRevBar = Math.max(revenueBreakdown.offsetDirect, revenueBreakdown.conversionLift, 1);
 
   return (
-    <s-page heading="ROI & Performance" backAction={{ url: "/app" }}>
+    <s-page heading="ROI & Performance">
       {/* ── Hero metrics ── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 20 }}>
         <MetricCard accent="#059669" label="Revenue offset" value={`${offsetRevenue.toFixed(2)} EUR`} sub="Revenu direct compensation" />

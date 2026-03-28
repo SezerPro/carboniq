@@ -2,6 +2,7 @@
 // These functions send Flow triggers via the Shopify Flow API.
 
 // Trigger: product.scored
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function triggerProductScored(admin: any, product: { id: string; title: string; carbonScoreKg: number; carbonLabel: string; confidence: number }) {
   // Use admin.graphql to send a flow trigger
   // For now, just a placeholder that logs the trigger
@@ -9,21 +10,25 @@ export async function triggerProductScored(admin: any, product: { id: string; ti
 }
 
 // Trigger: offset.completed
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function triggerOffsetCompleted(admin: any, offset: { orderId: string; carbonKg: number; amountEur: number; certificateCode: string }) {
   console.log(`[Flow] offset.completed: Order ${offset.orderId} → ${offset.carbonKg}kg`);
 }
 
 // Trigger: label.changed
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function triggerLabelChanged(admin: any, product: { id: string; title: string; oldLabel: string; newLabel: string }) {
   console.log(`[Flow] label.changed: ${product.title} → ${product.oldLabel} → ${product.newLabel}`);
 }
 
 // Trigger: threshold.exceeded
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function triggerThresholdExceeded(admin: any, data: { shopDomain: string; monthlyCarbon: number; threshold: number }) {
   console.log(`[Flow] threshold.exceeded: ${data.shopDomain} → ${data.monthlyCarbon}kg (threshold: ${data.threshold}kg)`);
 }
 
 // Action: auto-tag product with carbon label
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function autoTagProduct(admin: any, shopifyProductId: string, carbonLabel: string) {
   const tag = `carboniq:${carbonLabel.toLowerCase()}`;
   try {
