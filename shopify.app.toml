@@ -32,6 +32,10 @@ api_version = "2026-04"
   uri = "/webhooks/products/update"
 
   [[webhooks.subscriptions]]
+  topics = [ "orders/create" ]
+  uri = "/webhooks/orders/create"
+
+  [[webhooks.subscriptions]]
   compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
   uri = "/webhooks"
 

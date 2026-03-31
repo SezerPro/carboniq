@@ -1,4 +1,5 @@
 import prisma from "../../db.server";
+import { generateQRCodeDataUrl } from "../export/qrcode.server";
 
 const ALPHANUMERIC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -58,6 +59,19 @@ export async function createCertificate(offsetId: string) {
       oceanKg: offset.shop?.enableOcean ? 0.5 : 0,
     },
   });
+
+  // Auto-generate QR code (non-blocking — certificate is still valid without it)
+  try {
+    const verifyUrl = `/apps/carboniq/api/certificate/${code}`;
+    const qrCodeUrl = await generateQRCodeDataUrl(verifyUrl);
+    await prisma.certificate.update({
+      where: { id: certificate.id },
+      data: { qrCodeUrl },
+    });
+    certificate.qrCodeUrl = qrCodeUrl;
+  } catch (qrError) {
+    console.error(`[certificate] QR code generation failed for ${code}:`, qrError);
+  }
 
   return {
     ...certificate,
