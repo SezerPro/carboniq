@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import type {
   ActionFunctionArgs,
   HeadersFunction,
@@ -23,7 +23,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const shop = await db.shop.findUnique({
     where: { shopDomain: session.shop },
   });
-  if (!shop) return { tips: [], progress: null };
+  if (!shop) return { tips: [], progress: null, goal: null };
 
   let tips = await getReductionTips(shop.id);
 
@@ -48,6 +48,82 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     ? Math.round((appliedTips.length / tips.length) * 100)
     : 0;
 
+  // Fetch the latest reduction goal
+  const latestGoal = await db.reductionGoal.findFirst({
+    where: { shopId: shop.id },
+    orderBy: { createdAt: "desc" },
+  });
+
+  let goalData: {
+    id: string;
+    targetPct: number;
+    baselineCo2Kg: number;
+    currentCo2Kg: number;
+    actualReductionPct: number;
+    deadline: string;
+    daysRemaining: number;
+    progressPct: number;
+    status: "on_track" | "behind" | "at_risk";
+  } | null = null;
+
+  if (latestGoal) {
+    const currentCo2Kg = Math.round(totalCarbonKg * 100) / 100;
+    const actualReductionPct =
+      latestGoal.baselineCo2Kg > 0
+        ? Math.round(
+            ((latestGoal.baselineCo2Kg - currentCo2Kg) /
+              latestGoal.baselineCo2Kg) *
+              10000,
+          ) / 100
+        : 0;
+    const progressPct =
+      latestGoal.targetPct > 0
+        ? Math.min(
+            100,
+            Math.round((actualReductionPct / latestGoal.targetPct) * 100),
+          )
+        : 0;
+
+    const now = new Date();
+    const deadline = new Date(latestGoal.deadline);
+    const daysRemaining = Math.max(
+      0,
+      Math.ceil(
+        (deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+      ),
+    );
+
+    // Determine status based on expected pace
+    const totalDays = Math.ceil(
+      (deadline.getTime() - latestGoal.createdAt.getTime()) /
+        (1000 * 60 * 60 * 24),
+    );
+    const elapsedDays = totalDays - daysRemaining;
+    const expectedProgressPct =
+      totalDays > 0 ? (elapsedDays / totalDays) * 100 : 100;
+
+    let status: "on_track" | "behind" | "at_risk" = "on_track";
+    if (daysRemaining === 0 && progressPct < 100) {
+      status = "at_risk";
+    } else if (progressPct < expectedProgressPct * 0.5) {
+      status = "at_risk";
+    } else if (progressPct < expectedProgressPct * 0.8) {
+      status = "behind";
+    }
+
+    goalData = {
+      id: latestGoal.id,
+      targetPct: latestGoal.targetPct,
+      baselineCo2Kg: Math.round(latestGoal.baselineCo2Kg * 100) / 100,
+      currentCo2Kg,
+      actualReductionPct,
+      deadline: latestGoal.deadline.toISOString(),
+      daysRemaining,
+      progressPct,
+      status,
+    };
+  }
+
   return {
     tips: tips.map((t) => ({
       id: t.id,
@@ -71,6 +147,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           : 0,
       reductionScore,
     },
+    goal: goalData,
   };
 };
 
@@ -106,6 +183,48 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       data: { isApplied: false, appliedAt: null },
     });
     return { success: true };
+  }
+
+  if (intent === "set-goal") {
+    const targetPct = parseFloat(formData.get("targetPct") as string);
+    const deadlineStr = formData.get("deadline") as string;
+    if (!targetPct || !deadlineStr) return { error: "Données manquantes" };
+
+    const deadline = new Date(deadlineStr);
+    if (isNaN(deadline.getTime()) || deadline <= new Date()) {
+      return { error: "Date limite invalide" };
+    }
+
+    // Calculate current total CO2 as baseline
+    const products = await db.product.findMany({
+      where: { shopId: shop.id },
+    });
+    const baselineCo2Kg = products.reduce(
+      (s, p) => s + (p.carbonScoreKg ?? 0),
+      0,
+    );
+
+    // Delete any existing goals for this shop
+    await db.reductionGoal.deleteMany({ where: { shopId: shop.id } });
+
+    // Create new goal
+    await db.reductionGoal.create({
+      data: {
+        shopId: shop.id,
+        targetPct,
+        baselineCo2Kg: Math.round(baselineCo2Kg * 100) / 100,
+        deadline,
+      },
+    });
+
+    return { success: true, message: "Objectif défini" };
+  }
+
+  if (intent === "delete-goal") {
+    const goalId = formData.get("goalId") as string;
+    if (!goalId) return { error: "goalId manquant" };
+    await db.reductionGoal.delete({ where: { id: goalId } });
+    return { success: true, message: "Objectif supprimé" };
   }
 
   return { error: "Unknown intent" };
@@ -171,6 +290,41 @@ const PAGE_CSS = `
 /* Progress bar */
 .cq-progress-track{width:100%;height:10px;background:rgba(164,156,144,.08);border-radius:6px;overflow:hidden}
 .cq-progress-fill{height:100%;background:linear-gradient(90deg,${COLORS.green},#6AA87A);border-radius:6px;transition:width .6s ease}
+
+/* Goal section */
+.cq-goal-form{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end}
+.cq-goal-field{display:flex;flex-direction:column;gap:6px;flex:1;min-width:160px}
+.cq-goal-field label{font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${COLORS.textMuted}}
+.cq-goal-field select,.cq-goal-field input[type="date"]{
+  padding:10px 14px;border-radius:12px;font-family:'DM Sans',sans-serif;
+  font-size:13px;border:1px solid rgba(164,156,144,.2);background:rgba(253,252,251,.8);
+  color:${COLORS.dark};outline:none;transition:border-color .2s;
+}
+.cq-goal-field select:focus,.cq-goal-field input[type="date"]:focus{border-color:${COLORS.green}}
+
+/* Goal progress bar */
+.cq-goal-bar-wrap{position:relative;width:100%;height:14px;background:rgba(164,156,144,.08);border-radius:8px;overflow:hidden}
+.cq-goal-bar-fill{height:100%;border-radius:8px;transition:width .8s cubic-bezier(.22,1,.36,1)}
+.cq-goal-bar-target{
+  position:absolute;top:-4px;bottom:-4px;width:2px;background:${COLORS.dark};
+  border-radius:2px;transition:left .8s cubic-bezier(.22,1,.36,1);
+}
+
+/* Goal status badges */
+.cq-goal-status{
+  display:inline-flex;align-items:center;gap:6px;padding:6px 14px;
+  border-radius:99px;font-size:11px;font-weight:700;
+}
+.cq-goal-status-on_track{background:rgba(74,124,89,.1);color:#15803D}
+.cq-goal-status-behind{background:rgba(217,119,6,.1);color:#A16207}
+.cq-goal-status-at_risk{background:rgba(185,28,28,.1);color:#B91C1C}
+
+/* Goal stats row */
+.cq-goal-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px}
+.cq-goal-stat-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${COLORS.textMuted}}
+.cq-goal-stat-val{font-family:'DM Mono',monospace;font-size:18px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+
+@media(max-width:768px){.cq-goal-stats{grid-template-columns:1fr}.cq-goal-form{flex-direction:column}}
 `;
 
 // -- Category SVG icons --
@@ -187,11 +341,21 @@ const CATEGORY_SVGS: Record<string, string> = {
 // -- Component --
 
 export default function Reduction() {
-  const { tips, progress } = useLoaderData<typeof loader>();
+  const { tips, progress, goal } = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
+  const goalFetcher = useFetcher<typeof action>();
   const isRegenerating =
     fetcher.state !== "idle" &&
     fetcher.formData?.get("intent") === "regenerate";
+  const isSettingGoal =
+    goalFetcher.state !== "idle" &&
+    goalFetcher.formData?.get("intent") === "set-goal";
+  const isDeletingGoal =
+    goalFetcher.state !== "idle" &&
+    goalFetcher.formData?.get("intent") === "delete-goal";
+
+  const [goalTargetPct, setGoalTargetPct] = useState("30");
+  const [goalDeadline, setGoalDeadline] = useState("");
 
   const handleRegenerate = useCallback(() => {
     fetcher.submit({ intent: "regenerate" }, { method: "POST" });
@@ -242,6 +406,151 @@ export default function Reduction() {
             {isRegenerating ? "Calcul en cours..." : "Recalculer les suggestions"}
           </button>
         </div>
+
+        {/* Goal section */}
+        {!goal ? (
+          <div className="cq-glass cq-anim" style={{ animationDelay: ".03s" }}>
+            <div className="cq-glass-head">
+              <div className="cq-glass-icon" style={{ background: COLORS.greenLight }}>
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" stroke={COLORS.green} strokeWidth="1.5" />
+                  <circle cx="12" cy="12" r="6" stroke={COLORS.green} strokeWidth="1.5" />
+                  <circle cx="12" cy="12" r="2" fill={COLORS.green} />
+                </svg>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div className="cq-glass-title">Fixez un objectif de reduction</div>
+                <div className="cq-glass-desc">Definissez un objectif pour suivre votre progression</div>
+              </div>
+            </div>
+            <div className="cq-glass-body">
+              <goalFetcher.Form method="POST">
+                <input type="hidden" name="intent" value="set-goal" />
+                <div className="cq-goal-form">
+                  <div className="cq-goal-field">
+                    <label htmlFor="goal-target">Objectif de reduction</label>
+                    <select
+                      id="goal-target"
+                      name="targetPct"
+                      value={goalTargetPct}
+                      onChange={(e) => setGoalTargetPct(e.target.value)}
+                    >
+                      <option value="10">-10% CO&#x2082;e</option>
+                      <option value="20">-20% CO&#x2082;e</option>
+                      <option value="30">-30% CO&#x2082;e</option>
+                      <option value="50">-50% CO&#x2082;e</option>
+                    </select>
+                  </div>
+                  <div className="cq-goal-field">
+                    <label htmlFor="goal-deadline">Date limite</label>
+                    <input
+                      id="goal-deadline"
+                      type="date"
+                      name="deadline"
+                      value={goalDeadline}
+                      onChange={(e) => setGoalDeadline(e.target.value)}
+                      min={new Date(Date.now() + 86400000).toISOString().split("T")[0]}
+                      required
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="cq-btn cq-btn-green"
+                    disabled={isSettingGoal || !goalDeadline}
+                  >
+                    {isSettingGoal ? "Enregistrement..." : "Definir l'objectif"}
+                  </button>
+                </div>
+              </goalFetcher.Form>
+            </div>
+          </div>
+        ) : (
+          <div className="cq-glass cq-anim" style={{ animationDelay: ".03s" }}>
+            <div className="cq-glass-head">
+              <div className="cq-glass-icon" style={{ background: COLORS.greenLight }}>
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" stroke={COLORS.green} strokeWidth="1.5" />
+                  <circle cx="12" cy="12" r="6" stroke={COLORS.green} strokeWidth="1.5" />
+                  <circle cx="12" cy="12" r="2" fill={COLORS.green} />
+                </svg>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div className="cq-glass-title">
+                  Objectif : <span className="cq-mono" style={{ color: COLORS.green }}>-{goal.targetPct}%</span> d&apos;ici le{" "}
+                  {new Date(goal.deadline).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+                </div>
+              </div>
+              <span className={`cq-goal-status cq-goal-status-${goal.status}`}>
+                {goal.status === "on_track" ? "En bonne voie" : goal.status === "behind" ? "En retard" : "A risque"}
+              </span>
+            </div>
+            <div className="cq-glass-body">
+              {/* Progress bar */}
+              <div style={{ marginBottom: 8 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: COLORS.text }}>
+                    Progression : <span className="cq-mono" style={{ color: goal.status === "on_track" ? COLORS.green : goal.status === "behind" ? COLORS.amber : COLORS.red }}>{goal.actualReductionPct}%</span>
+                    <span style={{ color: COLORS.textMuted }}> / {goal.targetPct}%</span>
+                  </span>
+                  <span style={{ fontSize: 11, color: COLORS.textMuted }}>
+                    {goal.daysRemaining} jour{goal.daysRemaining !== 1 ? "s" : ""} restant{goal.daysRemaining !== 1 ? "s" : ""}
+                  </span>
+                </div>
+                <div className="cq-goal-bar-wrap">
+                  <div
+                    className="cq-goal-bar-fill"
+                    style={{
+                      width: `${Math.max(0, Math.min(100, goal.progressPct))}%`,
+                      background: goal.status === "on_track"
+                        ? `linear-gradient(90deg, ${COLORS.green}, #6AA87A)`
+                        : goal.status === "behind"
+                          ? `linear-gradient(90deg, ${COLORS.amber}, #E5A336)`
+                          : `linear-gradient(90deg, ${COLORS.red}, #D44848)`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div className="cq-goal-stats">
+                <div>
+                  <div className="cq-goal-stat-label">Baseline</div>
+                  <div className="cq-goal-stat-val" style={{ color: COLORS.textMuted }}>
+                    {goal.baselineCo2Kg} <span style={{ fontSize: 11, color: COLORS.textFaint }}>kgCO&#x2082;e</span>
+                  </div>
+                </div>
+                <div>
+                  <div className="cq-goal-stat-label">Actuel</div>
+                  <div className="cq-goal-stat-val" style={{ color: COLORS.dark }}>
+                    {goal.currentCo2Kg} <span style={{ fontSize: 11, color: COLORS.textFaint }}>kgCO&#x2082;e</span>
+                  </div>
+                </div>
+                <div>
+                  <div className="cq-goal-stat-label">Cible</div>
+                  <div className="cq-goal-stat-val" style={{ color: COLORS.green }}>
+                    {(goal.baselineCo2Kg * (1 - goal.targetPct / 100)).toFixed(1)} <span style={{ fontSize: 11, color: COLORS.textFaint }}>kgCO&#x2082;e</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Delete button */}
+              <div style={{ marginTop: 20, display: "flex", justifyContent: "flex-end" }}>
+                <goalFetcher.Form method="POST">
+                  <input type="hidden" name="intent" value="delete-goal" />
+                  <input type="hidden" name="goalId" value={goal.id} />
+                  <button
+                    type="submit"
+                    className="cq-btn cq-btn-ghost"
+                    disabled={isDeletingGoal}
+                    style={{ fontSize: 12 }}
+                  >
+                    {isDeletingGoal ? "Suppression..." : "Supprimer l'objectif"}
+                  </button>
+                </goalFetcher.Form>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Summary hero */}
         <div className="cq-red-hero cq-anim">
