@@ -1,50 +1,219 @@
 // Shopify Flow trigger helpers
-// These functions send Flow triggers via the Shopify Flow API.
+// These functions tag products/orders via GraphQL as fire-and-forget actions.
+// All functions wrap in try/catch and never throw — safe for webhook context.
 
-// Trigger: product.scored
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function triggerProductScored(admin: any, product: { id: string; title: string; carbonScoreKg: number; carbonLabel: string; confidence: number }) {
-  // Use admin.graphql to send a flow trigger
-  // For now, just a placeholder that logs the trigger
-  console.log(`[Flow] product.scored: ${product.title} → ${product.carbonScoreKg}kg (${product.carbonLabel})`);
-}
+type AdminClient = any;
 
-// Trigger: offset.completed
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function triggerOffsetCompleted(admin: any, offset: { orderId: string; carbonKg: number; amountEur: number; certificateCode: string }) {
-  console.log(`[Flow] offset.completed: Order ${offset.orderId} → ${offset.carbonKg}kg`);
-}
-
-// Trigger: label.changed
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function triggerLabelChanged(admin: any, product: { id: string; title: string; oldLabel: string; newLabel: string }) {
-  console.log(`[Flow] label.changed: ${product.title} → ${product.oldLabel} → ${product.newLabel}`);
-}
-
-// Trigger: threshold.exceeded
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function triggerThresholdExceeded(admin: any, data: { shopDomain: string; monthlyCarbon: number; threshold: number }) {
-  console.log(`[Flow] threshold.exceeded: ${data.shopDomain} → ${data.monthlyCarbon}kg (threshold: ${data.threshold}kg)`);
-}
-
-// Action: auto-tag product with carbon label
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function autoTagProduct(admin: any, shopifyProductId: string, carbonLabel: string) {
-  const tag = `carboniq:${carbonLabel.toLowerCase()}`;
+/**
+ * Trigger: product.scored
+ * Tags the product with "carboniq-scored" and the label tag (e.g. "carboniq:low").
+ */
+export async function triggerProductScored(
+  admin: AdminClient,
+  productGid: string,
+  score: number,
+  label: string,
+) {
   try {
-    await admin.graphql(`#graphql
+    const gid = productGid.startsWith("gid://")
+      ? productGid
+      : `gid://shopify/Product/${productGid}`;
+    const labelTag = `carboniq:${label.toLowerCase()}`;
+
+    await admin.graphql(
+      `#graphql
       mutation addTags($id: ID!, $tags: [String!]!) {
         tagsAdd(id: $id, tags: $tags) {
           userErrors { field message }
         }
       }
-    `, {
-      variables: {
-        id: shopifyProductId.startsWith("gid://") ? shopifyProductId : `gid://shopify/Product/${shopifyProductId}`,
-        tags: [tag, "carboniq:scored"],
+    `,
+      {
+        variables: {
+          id: gid,
+          tags: ["carboniq-scored", labelTag],
+        },
       },
-    });
+    );
+
+    console.log(
+      `[Flow] product.scored: ${gid} → ${score}kg (${label})`,
+    );
   } catch (error) {
-    console.error(`[Flow] Failed to tag product ${shopifyProductId}:`, error);
+    console.error(`[Flow] triggerProductScored failed:`, error);
+  }
+}
+
+/**
+ * Trigger: offset.completed
+ * Tags the order with "carboniq-offset".
+ * NOTE: Only usable in contexts where admin GraphQL is available (webhooks).
+ */
+export async function triggerOffsetCompleted(
+  admin: AdminClient,
+  orderId: string,
+  carbonKg: number,
+) {
+  try {
+    const gid = orderId.startsWith("gid://")
+      ? orderId
+      : `gid://shopify/Order/${orderId}`;
+
+    await admin.graphql(
+      `#graphql
+      mutation addTags($id: ID!, $tags: [String!]!) {
+        tagsAdd(id: $id, tags: $tags) {
+          userErrors { field message }
+        }
+      }
+    `,
+      {
+        variables: {
+          id: gid,
+          tags: ["carboniq-offset"],
+        },
+      },
+    );
+
+    console.log(
+      `[Flow] offset.completed: ${gid} → ${carbonKg}kg`,
+    );
+  } catch (error) {
+    console.error(`[Flow] triggerOffsetCompleted failed:`, error);
+  }
+}
+
+/**
+ * Trigger: label.changed
+ * Removes the old label tag and adds the new one.
+ */
+export async function triggerLabelChanged(
+  admin: AdminClient,
+  productGid: string,
+  oldLabel: string,
+  newLabel: string,
+) {
+  try {
+    const gid = productGid.startsWith("gid://")
+      ? productGid
+      : `gid://shopify/Product/${productGid}`;
+    const oldTag = `carboniq:${oldLabel.toLowerCase()}`;
+    const newTag = `carboniq:${newLabel.toLowerCase()}`;
+
+    // Remove old tag
+    await admin.graphql(
+      `#graphql
+      mutation removeTags($id: ID!, $tags: [String!]!) {
+        tagsRemove(id: $id, tags: $tags) {
+          userErrors { field message }
+        }
+      }
+    `,
+      {
+        variables: {
+          id: gid,
+          tags: [oldTag],
+        },
+      },
+    );
+
+    // Add new tag
+    await admin.graphql(
+      `#graphql
+      mutation addTags($id: ID!, $tags: [String!]!) {
+        tagsAdd(id: $id, tags: $tags) {
+          userErrors { field message }
+        }
+      }
+    `,
+      {
+        variables: {
+          id: gid,
+          tags: [newTag],
+        },
+      },
+    );
+
+    console.log(
+      `[Flow] label.changed: ${gid} → ${oldLabel} → ${newLabel}`,
+    );
+  } catch (error) {
+    console.error(`[Flow] triggerLabelChanged failed:`, error);
+  }
+}
+
+/**
+ * Trigger: threshold.exceeded
+ * Tags the product with "carboniq-high-impact" when score exceeds threshold.
+ */
+export async function triggerThresholdExceeded(
+  admin: AdminClient,
+  productGid: string,
+  score: number,
+  threshold: number,
+) {
+  try {
+    const gid = productGid.startsWith("gid://")
+      ? productGid
+      : `gid://shopify/Product/${productGid}`;
+
+    await admin.graphql(
+      `#graphql
+      mutation addTags($id: ID!, $tags: [String!]!) {
+        tagsAdd(id: $id, tags: $tags) {
+          userErrors { field message }
+        }
+      }
+    `,
+      {
+        variables: {
+          id: gid,
+          tags: ["carboniq-high-impact"],
+        },
+      },
+    );
+
+    console.log(
+      `[Flow] threshold.exceeded: ${gid} → ${score}kg (threshold: ${threshold}kg)`,
+    );
+  } catch (error) {
+    console.error(`[Flow] triggerThresholdExceeded failed:`, error);
+  }
+}
+
+/**
+ * Action: auto-tag product with carbon label.
+ * Kept for backward compatibility.
+ */
+export async function autoTagProduct(
+  admin: AdminClient,
+  shopifyProductId: string,
+  carbonLabel: string,
+) {
+  const tag = `carboniq:${carbonLabel.toLowerCase()}`;
+  try {
+    await admin.graphql(
+      `#graphql
+      mutation addTags($id: ID!, $tags: [String!]!) {
+        tagsAdd(id: $id, tags: $tags) {
+          userErrors { field message }
+        }
+      }
+    `,
+      {
+        variables: {
+          id: shopifyProductId.startsWith("gid://")
+            ? shopifyProductId
+            : `gid://shopify/Product/${shopifyProductId}`,
+          tags: [tag, "carboniq:scored"],
+        },
+      },
+    );
+  } catch (error) {
+    console.error(
+      `[Flow] Failed to tag product ${shopifyProductId}:`,
+      error,
+    );
   }
 }

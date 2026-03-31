@@ -220,6 +220,25 @@
     var headingText = '{{ block.settings.heading_text | default: "Compensez votre empreinte carbone" }}';
     var showEquivalence = {{ block.settings.show_equivalence | default: true }};
     var customAppUrl = '{{ block.settings.app_url }}'.trim();
+    var widgetLocale = '{{ block.settings.locale | default: "auto" }}';
+
+    /* ── i18n labels — resolved from locale setting ── */
+    var i18nLabels = {
+      fr: { footprint: 'Empreinte', offset: 'Compensation', toggleLabel: 'Compenser mon empreinte', carEquiv: 'km en voiture' },
+      en: { footprint: 'Footprint', offset: 'Offset', toggleLabel: 'Offset my footprint', carEquiv: 'km by car' },
+      de: { footprint: 'Fußabdruck', offset: 'Kompensation', toggleLabel: 'Meinen Fußabdruck kompensieren', carEquiv: 'km mit dem Auto' },
+      es: { footprint: 'Huella', offset: 'Compensación', toggleLabel: 'Compensar mi huella', carEquiv: 'km en coche' },
+      pt: { footprint: 'Pegada', offset: 'Compensação', toggleLabel: 'Compensar minha pegada', carEquiv: 'km de carro' },
+      it: { footprint: 'Impronta', offset: 'Compensazione', toggleLabel: 'Compensare la mia impronta', carEquiv: 'km in auto' },
+      nl: { footprint: 'Voetafdruk', offset: 'Compensatie', toggleLabel: 'Mijn voetafdruk compenseren', carEquiv: 'km per auto' },
+      ja: { footprint: 'フットプリント', offset: 'オフセット', toggleLabel: 'フットプリントを相殺する', carEquiv: 'km（車）' }
+    };
+    /* Resolve locale: detect from Shopify request locale, fallback to "fr" */
+    var resolvedLocale = widgetLocale;
+    if (resolvedLocale === 'auto') {
+      resolvedLocale = (document.documentElement.lang || 'fr').split('-')[0].toLowerCase();
+    }
+    var labels = i18nLabels[resolvedLocale] || i18nLabels['fr'];
 
     var apiBase;
     if (customAppUrl && customAppUrl.length > 5) {
@@ -299,7 +318,7 @@
         if (showEquivalence && equiv.carKm) {
           equivHtml = '<div class="carboniq-offset-equiv">'
             + carSvg
-            + '<span>\u2248 ' + equiv.carKm + ' km en voiture</span>'
+            + '<span>\u2248 ' + equiv.carKm + ' ' + labels.carEquiv + '</span>'
             + '</div>';
         }
 
@@ -313,12 +332,12 @@
           /* Stats */
           + '<div class="carboniq-offset-stats">'
           + '<div class="carboniq-offset-stat">'
-          + '<span class="carboniq-offset-stat-label">Empreinte</span>'
+          + '<span class="carboniq-offset-stat-label">' + labels.footprint + '</span>'
           + '<div><span class="carboniq-offset-stat-value">' + carbonDisplay + '</span> <span class="carboniq-offset-stat-unit">' + carbonUnit + '</span></div>'
           + '</div>'
           + '<div class="carboniq-offset-stat-divider"></div>'
           + '<div class="carboniq-offset-stat">'
-          + '<span class="carboniq-offset-stat-label">Compensation</span>'
+          + '<span class="carboniq-offset-stat-label">' + labels.offset + '</span>'
           + '<div><span class="carboniq-offset-stat-value">' + costDisplay + '</span> <span class="carboniq-offset-stat-unit">\u20ac</span></div>'
           + '</div>'
           + '</div>'
@@ -327,7 +346,7 @@
           /* Toggle row */
           + '<div class="carboniq-offset-toggle-row">'
           + '<div>'
-          + '<div class="carboniq-offset-toggle-label">Compenser mon empreinte</div>'
+          + '<div class="carboniq-offset-toggle-label">' + labels.toggleLabel + '</div>'
           + '<div class="carboniq-offset-toggle-price">+ ' + costDisplay + ' \u20ac</div>'
           + '</div>'
           + '<label class="carboniq-toggle">'
@@ -398,6 +417,23 @@
       "id": "show_equivalence",
       "label": "Afficher l'équivalence (km en voiture)",
       "default": true
+    },
+    {
+      "type": "select",
+      "id": "locale",
+      "label": "Langue / Language",
+      "options": [
+        { "value": "auto", "label": "Auto (detect)" },
+        { "value": "fr", "label": "Français" },
+        { "value": "en", "label": "English" },
+        { "value": "de", "label": "Deutsch" },
+        { "value": "es", "label": "Español" },
+        { "value": "pt", "label": "Português" },
+        { "value": "it", "label": "Italiano" },
+        { "value": "nl", "label": "Nederlands" },
+        { "value": "ja", "label": "日本語" }
+      ],
+      "default": "auto"
     },
     {
       "type": "text",

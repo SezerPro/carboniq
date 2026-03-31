@@ -11,6 +11,7 @@ import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
 import { calculateAndSave } from "../lib/carbon/engine.server";
 import { seedEmissionFactors } from "../lib/carbon/seed.server";
+import { syncProductMetafield } from "../lib/carbon/metafields.server";
 import { hasAccess, FEATURES, type PlanTier } from "../lib/plans/constants";
 import { getPlanTier } from "../lib/plans/gates.server";
 import { computeAlerts } from "../lib/notifications/alerts.server";
@@ -170,7 +171,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         const gid = node.id; // gid://shopify/Product/12345
         const numericId = gid.split("/").pop() ?? gid;
 
-        await calculateAndSave(shop.id, {
+        const result = await calculateAndSave(shop.id, {
           id: numericId,
           title: node.title,
           product_type: node.productType || null,
@@ -178,6 +179,20 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           vendor: node.vendor || null,
           weight: weightGrams,
         });
+
+        // Sync metafields to Shopify (fire-and-forget)
+        try {
+          await syncProductMetafield(
+            admin,
+            gid,
+            result.carbonScoreKg,
+            result.carbonLabel,
+            result.categoryCode,
+          );
+        } catch (metaErr) {
+          console.error(`Metafield sync failed for ${numericId}:`, metaErr);
+        }
+
         processed++;
       }
     }

@@ -94,6 +94,9 @@
         };
         var t = theme[label] || theme.MEDIUM;
 
+        /* Use translated label from API if available, fallback to French */
+        if (data.labelText) { t.label = data.labelText; }
+
         /* ── SVG leaf icon ── */
         var leafSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="' + t.fg + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 008 20C19 20 22 3 22 3c-1 2-8 9-8 9z"/></svg>';
 

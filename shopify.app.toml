@@ -47,26 +47,38 @@ scopes = "read_products,write_products,write_metaobject_definitions,write_metaob
 [auth]
 redirect_urls = [ "https://carboniq-sigma.vercel.app/auth/callback" ]
 
-[product.metafields.app.demo_info]
-type = "single_line_text_field"
-name = "Demo Source Info"
-description = "Tracks products created by the Shopify app template for development"
+[product.metafields.carboniq.co2_score]
+type = "number_decimal"
+name = "CO₂ Score (kgCO₂e)"
+description = "Carbon footprint score in kgCO₂e calculated by Carboniq"
 
-  [product.metafields.app.demo_info.access]
+  [product.metafields.carboniq.co2_score.access]
   admin = "merchant_read_write"
+  storefront = "public_read"
 
-[metaobjects.app.example]
-name = "Example"
-description = "An example metaobject definition created by this template"
-
-  [metaobjects.app.example.access]
-  admin = "merchant_read_write"
-
-[metaobjects.app.example.fields.title]
-name = "Title"
+[product.metafields.carboniq.co2_label]
 type = "single_line_text_field"
-required = true
+name = "CO₂ Label"
+description = "Carbon impact label: LOW, MEDIUM, HIGH, or VERY_HIGH"
 
-[metaobjects.app.example.fields.description]
-name = "Description"
-type = "multi_line_text_field"
+  [product.metafields.carboniq.co2_label.access]
+  admin = "merchant_read_write"
+  storefront = "public_read"
+
+[product.metafields.carboniq.co2_grade]
+type = "single_line_text_field"
+name = "CO₂ Grade"
+description = "Carbon grade: A (low) to D (very high)"
+
+  [product.metafields.carboniq.co2_grade.access]
+  admin = "merchant_read_write"
+  storefront = "public_read"
+
+[product.metafields.carboniq.co2_category]
+type = "single_line_text_field"
+name = "CO₂ Category"
+description = "ADEME emission factor category code used for calculation"
+
+  [product.metafields.carboniq.co2_category.access]
+  admin = "merchant_read_write"
+  storefront = "public_read"
