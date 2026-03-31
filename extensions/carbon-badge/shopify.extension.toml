@@ -15,3 +15,7 @@ type = "theme"
   [[extensions.targeting]]
   module = "./blocks/thank_you.liquid"
   target = "section"
+
+  [[extensions.targeting]]
+  module = "./blocks/offset_checkout.liquid"
+  target = "section"

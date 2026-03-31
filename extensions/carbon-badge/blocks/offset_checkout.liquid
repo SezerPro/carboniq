@@ -1,0 +1,411 @@
+{% comment %}
+  Carboniq — Offset Checkout Widget
+  Displays cart CO₂ footprint and lets customers opt-in to carbon offsetting.
+  Reads cart items, calls the offset-calculate API, and sets cart attributes.
+{% endcomment %}
+
+<div id="carboniq-offset-widget" class="carboniq-offset-wrapper" style="display:none;">
+  <!-- Skeleton loader -->
+  <div class="carboniq-offset-skeleton">
+    <div class="carboniq-offset-skeleton-bar" style="width:100%;height:20px;margin-bottom:12px;"></div>
+    <div class="carboniq-offset-skeleton-bar" style="width:60%;height:16px;margin-bottom:8px;"></div>
+    <div class="carboniq-offset-skeleton-bar" style="width:40%;height:36px;"></div>
+  </div>
+</div>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
+
+  .carboniq-offset-wrapper {
+    margin: 16px 0;
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Skeleton ── */
+  .carboniq-offset-skeleton-bar {
+    background: linear-gradient(90deg, #f3f1ee 25%, #e9e5df 50%, #f3f1ee 75%);
+    background-size: 200% 100%;
+    animation: cq-offset-shimmer 1.5s infinite;
+    border-radius: 8px;
+  }
+  @keyframes cq-offset-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* ── Fade in ── */
+  @keyframes cq-offset-fade-in {
+    from { opacity: 0; transform: translateY(8px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .carboniq-offset-enter {
+    animation: cq-offset-fade-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  /* ── Card ── */
+  .carboniq-offset-card {
+    position: relative;
+    padding: 20px 22px;
+    border-radius: 16px;
+    background: rgba(245, 240, 235, 0.65);
+    border: 1.5px solid rgba(74, 124, 89, 0.18);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow:
+      0 2px 12px rgba(74, 124, 89, 0.06),
+      0 8px 32px rgba(0, 0, 0, 0.03);
+    font-family: 'DM Sans', -apple-system, sans-serif;
+  }
+
+  .carboniq-offset-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .carboniq-offset-header-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: rgba(74, 124, 89, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .carboniq-offset-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2C2825;
+    line-height: 1.3;
+  }
+
+  /* ── Stats row ── */
+  .carboniq-offset-stats {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(74, 124, 89, 0.1);
+  }
+  .carboniq-offset-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .carboniq-offset-stat-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #9C9488;
+  }
+  .carboniq-offset-stat-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    color: #4A7C59;
+    line-height: 1.2;
+  }
+  .carboniq-offset-stat-unit {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: #4A7C59;
+    opacity: 0.6;
+  }
+  .carboniq-offset-stat-divider {
+    width: 1px;
+    height: 32px;
+    background: rgba(74, 124, 89, 0.12);
+    flex-shrink: 0;
+  }
+
+  /* ── Equivalence ── */
+  .carboniq-offset-equiv {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 16px;
+    font-size: 12px;
+    color: #7A746C;
+  }
+  .carboniq-offset-equiv-icon {
+    flex-shrink: 0;
+    opacity: 0.5;
+  }
+
+  /* ── Toggle row ── */
+  .carboniq-offset-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .carboniq-offset-toggle-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #3D3833;
+    line-height: 1.4;
+  }
+  .carboniq-offset-toggle-price {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: #4A7C59;
+  }
+
+  /* ── iOS-style toggle ── */
+  .carboniq-toggle {
+    position: relative;
+    width: 48px;
+    height: 28px;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .carboniq-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+  }
+  .carboniq-toggle-track {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #D1CCC5;
+    border-radius: 999px;
+    transition: background 0.25s ease;
+  }
+  .carboniq-toggle input:checked + .carboniq-toggle-track {
+    background: #4A7C59;
+  }
+  .carboniq-toggle-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: none;
+  }
+  .carboniq-toggle input:checked ~ .carboniq-toggle-thumb {
+    transform: translateX(20px);
+  }
+
+  /* ── Branding ── */
+  .carboniq-offset-brand {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: 12px;
+    font-size: 9px;
+    color: #9C9488;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+</style>
+
+<script>
+  (function() {
+    var widget = document.getElementById('carboniq-offset-widget');
+    if (!widget) return;
+
+    var shopDomain = '{{ shop.permanent_domain }}';
+    var headingText = '{{ block.settings.heading_text | default: "Compensez votre empreinte carbone" }}';
+    var showEquivalence = {{ block.settings.show_equivalence | default: true }};
+    var customAppUrl = '{{ block.settings.app_url }}'.trim();
+
+    var apiBase;
+    if (customAppUrl && customAppUrl.length > 5) {
+      apiBase = customAppUrl.replace(/\/$/, '');
+    } else {
+      apiBase = '/apps/carboniq';
+    }
+    var apiUrl = apiBase + '/api/offset-calculate';
+
+    /* ── Gather cart items ── */
+    var cartItems = [];
+    {% for item in cart.items %}
+      cartItems.push({
+        productId: '{{ item.product_id }}',
+        quantity: {{ item.quantity }}
+      });
+    {% endfor %}
+
+    if (cartItems.length === 0) {
+      widget.style.display = 'none';
+      return;
+    }
+
+    /* Show skeleton */
+    widget.style.display = 'block';
+
+    /* ── Fetch offset data ── */
+    var queryStr = '?shop=' + encodeURIComponent(shopDomain)
+      + '&items=' + encodeURIComponent(JSON.stringify(cartItems));
+
+    fetch(apiUrl + queryStr)
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (!data || typeof data.totalCarbonKg === 'undefined') {
+          widget.style.display = 'none';
+          return;
+        }
+
+        var totalKg = data.totalCarbonKg;
+        var costEur = data.offsetCostEur;
+        var equiv = data.equivalents || {};
+
+        if (totalKg <= 0) {
+          widget.style.display = 'none';
+          return;
+        }
+
+        /* Format values */
+        var carbonDisplay, carbonUnit;
+        if (totalKg < 1) {
+          carbonDisplay = (totalKg * 1000).toFixed(0);
+          carbonUnit = 'gCO₂e';
+        } else if (totalKg >= 1000) {
+          carbonDisplay = (totalKg / 1000).toFixed(2);
+          carbonUnit = 'tCO₂e';
+        } else {
+          carbonDisplay = totalKg.toFixed(2);
+          carbonUnit = 'kgCO₂e';
+        }
+
+        var costDisplay = costEur.toFixed(2).replace('.', ',');
+
+        /* ── SVG leaf icon ── */
+        var leafSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A7C59" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+          + '<path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 008 20C19 20 22 3 22 3c-1 2-8 9-8 9z"/>'
+          + '</svg>';
+
+        /* ── Car icon SVG for equivalence ── */
+        var carSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9C9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="carboniq-offset-equiv-icon">'
+          + '<path d="M5 17h2m10 0h2M3 11l1.5-5h15l1.5 5"/>'
+          + '<rect x="3" y="11" width="18" height="6" rx="2"/>'
+          + '<circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/>'
+          + '</svg>';
+
+        /* ── Equivalence line ── */
+        var equivHtml = '';
+        if (showEquivalence && equiv.carKm) {
+          equivHtml = '<div class="carboniq-offset-equiv">'
+            + carSvg
+            + '<span>\u2248 ' + equiv.carKm + ' km en voiture</span>'
+            + '</div>';
+        }
+
+        /* ── Build widget HTML ── */
+        var html = '<div class="carboniq-offset-card carboniq-offset-enter">'
+          /* Header */
+          + '<div class="carboniq-offset-header">'
+          + '<div class="carboniq-offset-header-icon">' + leafSvg + '</div>'
+          + '<div class="carboniq-offset-title">' + headingText + '</div>'
+          + '</div>'
+          /* Stats */
+          + '<div class="carboniq-offset-stats">'
+          + '<div class="carboniq-offset-stat">'
+          + '<span class="carboniq-offset-stat-label">Empreinte</span>'
+          + '<div><span class="carboniq-offset-stat-value">' + carbonDisplay + '</span> <span class="carboniq-offset-stat-unit">' + carbonUnit + '</span></div>'
+          + '</div>'
+          + '<div class="carboniq-offset-stat-divider"></div>'
+          + '<div class="carboniq-offset-stat">'
+          + '<span class="carboniq-offset-stat-label">Compensation</span>'
+          + '<div><span class="carboniq-offset-stat-value">' + costDisplay + '</span> <span class="carboniq-offset-stat-unit">\u20ac</span></div>'
+          + '</div>'
+          + '</div>'
+          /* Equivalence */
+          + equivHtml
+          /* Toggle row */
+          + '<div class="carboniq-offset-toggle-row">'
+          + '<div>'
+          + '<div class="carboniq-offset-toggle-label">Compenser mon empreinte</div>'
+          + '<div class="carboniq-offset-toggle-price">+ ' + costDisplay + ' \u20ac</div>'
+          + '</div>'
+          + '<label class="carboniq-toggle">'
+          + '<input type="checkbox" id="carboniq-offset-toggle">'
+          + '<div class="carboniq-toggle-track"></div>'
+          + '<div class="carboniq-toggle-thumb"></div>'
+          + '</label>'
+          + '</div>'
+          /* Branding */
+          + '<div class="carboniq-offset-brand">Carboniq</div>'
+          + '</div>';
+
+        widget.innerHTML = html;
+
+        /* ── Toggle handler ── */
+        var toggle = document.getElementById('carboniq-offset-toggle');
+        if (toggle) {
+          toggle.addEventListener('change', function() {
+            var isOn = toggle.checked;
+            var attrs = {};
+
+            if (isOn) {
+              attrs['attributes[carboniq_offset]'] = 'true';
+              attrs['attributes[carboniq_offset_kg]'] = totalKg.toFixed(4);
+              attrs['attributes[carboniq_offset_eur]'] = costEur.toFixed(2);
+            } else {
+              attrs['attributes[carboniq_offset]'] = 'false';
+              attrs['attributes[carboniq_offset_kg]'] = '0';
+              attrs['attributes[carboniq_offset_eur]'] = '0';
+            }
+
+            /* Build form body */
+            var body = [];
+            for (var key in attrs) {
+              body.push(encodeURIComponent(key) + '=' + encodeURIComponent(attrs[key]));
+            }
+
+            fetch('/cart/update.js', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: body.join('&')
+            }).catch(function(err) {
+              console.error('[Carboniq] Cart update failed:', err);
+            });
+          });
+        }
+      })
+      .catch(function() {
+        /* Error state: hide widget silently */
+        widget.style.display = 'none';
+      });
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Carboniq — Offset Checkout",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading_text",
+      "label": "Titre du widget",
+      "default": "Compensez votre empreinte carbone"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_equivalence",
+      "label": "Afficher l'équivalence (km en voiture)",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "app_url",
+      "label": "App URL (dev only)",
+      "info": "Collez l'URL du tunnel Cloudflare pour le dev. Laissez vide en production.",
+      "placeholder": "https://xxx.trycloudflare.com"
+    }
+  ]
+}
+{% endschema %}

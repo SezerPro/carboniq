@@ -13,6 +13,8 @@ import { calculateAndSave } from "../lib/carbon/engine.server";
 import { seedEmissionFactors } from "../lib/carbon/seed.server";
 import { hasAccess, FEATURES, type PlanTier } from "../lib/plans/constants";
 import { getPlanTier } from "../lib/plans/gates.server";
+import { computeAlerts } from "../lib/notifications/alerts.server";
+import { AlertBanner } from "../components/AlertBanner";
 
 // ── Loader ─────────────────────────────────────────────
 
@@ -59,6 +61,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     if (p.carbonLabel) stats[p.carbonLabel]++;
   }
 
+  const tier = getPlanTier(shop.plan, shop.planStatus);
+  const alerts = await computeAlerts(shop, stats, tier);
+
   return {
     shop,
     stats,
@@ -72,7 +77,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       calculatedAt: p.calculatedAt?.toISOString() ?? null,
     })),
     subscription: shop.subscription,
-    planTier: getPlanTier(shop.plan, shop.planStatus),
+    planTier: tier,
+    alerts,
   };
 };
 
@@ -598,7 +604,7 @@ const LABELS: Record<string, { color: string; bg: string; accent: string; dot: s
 // ── Component ──
 
 export default function Index() {
-  const { stats, products, subscription, planTier } = useLoaderData<typeof loader>();
+  const { stats, products, subscription, planTier, alerts } = useLoaderData<typeof loader>();
   const plan = (planTier ?? "FREE") as PlanTier;
   const fetcher = useFetcher<typeof action>();
   const shopify = useAppBridge();
@@ -684,6 +690,9 @@ export default function Index() {
       <style dangerouslySetInnerHTML={{ __html: CSS + `\n.cq-ring-fg{--ring-offset:${ringOffset}}` }} />
 
       <div className="cq">
+
+        {/* ── Alerts ── */}
+        {alerts && alerts.length > 0 && <AlertBanner alerts={alerts} />}
 
         {/* ── Bento Row 1 — Hero + Quota ── */}
         <div className="cq-bento">

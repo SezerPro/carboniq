@@ -25,6 +25,7 @@ export const FEATURES: Record<string, FeatureGate> = {
   carbon_calc:      { id: "carbon_calc",      label: "Calcul CO₂",             requiredPlan: "FREE",    description: "Scoring automatique ADEME" },
   recalculate:      { id: "recalculate",      label: "Recalculer",             requiredPlan: "FREE",    description: "Recalcul manuel des scores" },
   // ── STARTER ──
+  export_data:      { id: "export_data",      label: "Export CSV/PDF",         requiredPlan: "STARTER", description: "Export données et rapports" },
   badge_all_styles: { id: "badge_all_styles", label: "4 styles de badge",      requiredPlan: "STARTER", description: "Pill, Leaf, Minimal, Detaille" },
   certificates:     { id: "certificates",     label: "Certificats d'impact",   requiredPlan: "STARTER", description: "Certificats avec code unique" },
   offset_api:       { id: "offset_api",       label: "Offset checkout",        requiredPlan: "STARTER", description: "API de compensation carbone" },

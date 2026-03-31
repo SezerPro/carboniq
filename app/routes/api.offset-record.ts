@@ -2,6 +2,8 @@ import type { ActionFunctionArgs } from "react-router";
 import { recordOffset } from "../lib/offset/checkout.server";
 import { createCertificate } from "../lib/certificate/generator.server";
 import { getCorsWriteHeaders, verifyApiRequest, checkRateLimit } from "../lib/security/api-auth.server";
+import db from "../db.server";
+import { isKlaviyoConfigured, syncCustomerToKlaviyo } from "../lib/klaviyo/klaviyo.server";
 
 export async function action({ request }: ActionFunctionArgs) {
   const headers = getCorsWriteHeaders(request);
@@ -43,6 +45,32 @@ export async function action({ request }: ActionFunctionArgs) {
     });
 
     const certificate = await createCertificate(offset.id);
+
+    // Fire-and-forget: sync to Klaviyo if configured
+    void (async () => {
+      try {
+        const shopRecord = await db.shop.findUnique({ where: { id: verification.shopId! } });
+        if (shopRecord && isKlaviyoConfigured(shopRecord)) {
+          const totalOffsets = await db.carbonOffset.aggregate({
+            where: { shopId: verification.shopId!, status: "COMPLETED" },
+            _sum: { carbonKg: true },
+            _count: true,
+          });
+          await syncCustomerToKlaviyo(
+            shopRecord,
+            customerEmail ?? "",
+            orderName ?? "",
+            {
+              totalOffsetKg: totalOffsets._sum.carbonKg ?? 0,
+              totalOrders: totalOffsets._count,
+              lastOffsetDate: new Date().toISOString(),
+            },
+          );
+        }
+      } catch (e) {
+        console.error("[offset-record] Klaviyo sync error (non-blocking):", e);
+      }
+    })();
 
     return new Response(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
