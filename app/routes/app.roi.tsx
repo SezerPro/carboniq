@@ -3,6 +3,7 @@ import { useLoaderData, Link } from "react-router";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
+import { BASE_CSS, INIT_SCRIPT, COLORS } from "../lib/ui/shared-styles";
 
 // ── Loader ─────────────────────────────────────────────
 
@@ -142,14 +143,22 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   };
 };
 
-// ── Styles ─────────────────────────────────────────────
+// ── Page CSS ──────────────────────────────────────────
 
-const card = {
-  background: "#fff",
-  borderRadius: 12,
-  border: "1px solid #e5e7eb",
-  overflow: "hidden" as const,
-};
+const PAGE_CSS = `
+.roi-bar-track{height:10px;border-radius:5px;overflow:hidden;background:rgba(164,156,144,.08)}
+.roi-bar-fill{height:100%;border-radius:5px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+.roi-compare{display:grid;grid-template-columns:1fr 40px 1fr;gap:0;align-items:center}
+.roi-compare-box{padding:20px;border-radius:14px;text-align:center}
+.roi-compare-before{background:rgba(164,156,144,.06);border:1px solid rgba(164,156,144,.1)}
+.roi-compare-after{background:rgba(74,124,89,.05);border:1px solid rgba(74,124,89,.15)}
+.roi-aov{margin-top:16px;padding:12px 16px;background:rgba(164,156,144,.04);border-radius:12px;display:flex;justify-content:space-between;align-items:center}
+.roi-test-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(164,156,144,.05)}
+.roi-test-row:last-child{border-bottom:none}
+.roi-rec-item{display:flex;align-items:flex-start;gap:14px;padding:14px 24px;border-bottom:1px solid rgba(164,156,144,.05)}
+.roi-rec-item:last-child{border-bottom:none}
+.roi-rec-num{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;background:rgba(217,119,6,.08);color:#D97706}
+`;
 
 // ── Component ──────────────────────────────────────────
 
@@ -158,11 +167,19 @@ export default function ROIDashboard() {
 
   if (!data.hasData) {
     return (
-      <s-page heading="ROI & Performance">
-        <s-section>
-          <s-paragraph>Installez d&#39;abord l&#39;app depuis le dashboard.</s-paragraph>
-        </s-section>
-      </s-page>
+      <div className="cq-page">
+        <style dangerouslySetInnerHTML={{ __html: BASE_CSS + PAGE_CSS }} />
+        <script dangerouslySetInnerHTML={{ __html: INIT_SCRIPT }} />
+        <div className="cq-glass cq-anim">
+          <div className="cq-empty">
+            <div className="cq-empty-icon">
+              <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M3 3h18v18H3V3zm2 2v14h14V5H5zm3 3h8v2H8V8zm0 4h5v2H8v-2z" fill={COLORS.textMuted}/></svg>
+            </div>
+            <div className="cq-empty-t">Aucune donnee disponible</div>
+            <div className="cq-empty-d">{"Installez d'abord l'app depuis le dashboard."}</div>
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -171,36 +188,54 @@ export default function ROIDashboard() {
   const maxRevBar = Math.max(revenueBreakdown.offsetDirect, revenueBreakdown.conversionLift, 1);
 
   return (
-    <s-page heading="ROI & Performance">
+    <div className="cq-page">
+      <style dangerouslySetInnerHTML={{ __html: BASE_CSS + PAGE_CSS }} />
+      <script dangerouslySetInnerHTML={{ __html: INIT_SCRIPT }} />
+
       {/* ── Hero metrics ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 20 }}>
-        <MetricCard accent="#059669" label="Revenue offset" value={`${offsetRevenue.toFixed(2)} EUR`} sub="Revenu direct compensation" />
-        <MetricCard accent="#6366f1" label="Certificats generes" value={totalCertificates.toString()} sub="Certificats envoyes" />
-        <MetricCard accent="#0ea5e9" label="Taux d'adoption offset" value={`${adoptionRate.toFixed(1)}%`} sub="Commandes avec offset" />
-        <MetricCard accent="#f59e0b" label="Valeur ajoutee estimee" value={`${estimatedAddedValue.toFixed(2)} EUR`} sub="Offset + lift conversion" />
+      <div className="cq-metrics cq-stagger">
+        <div className="cq-metric cq-anim">
+          <div className="cq-metric-accent" style={{ background: COLORS.green }} />
+          <div className="cq-metric-label">Revenue offset</div>
+          <div className="cq-metric-val"><span className="cq-mono">{offsetRevenue.toFixed(2)}</span> <span>EUR</span></div>
+          <div className="cq-metric-sub">Revenu direct compensation</div>
+        </div>
+        <div className="cq-metric cq-anim">
+          <div className="cq-metric-accent" style={{ background: COLORS.dark }} />
+          <div className="cq-metric-label">Certificats generes</div>
+          <div className="cq-metric-val cq-display">{totalCertificates}</div>
+          <div className="cq-metric-sub">Certificats envoyes</div>
+        </div>
+        <div className="cq-metric cq-anim">
+          <div className="cq-metric-accent" style={{ background: COLORS.blue }} />
+          <div className="cq-metric-label">{"Taux d'adoption offset"}</div>
+          <div className="cq-metric-val"><span className="cq-mono">{adoptionRate.toFixed(1)}</span><span>%</span></div>
+          <div className="cq-metric-sub">Commandes avec offset</div>
+        </div>
+        <div className="cq-metric cq-anim">
+          <div className="cq-metric-accent" style={{ background: COLORS.amber }} />
+          <div className="cq-metric-label">Valeur ajoutee estimee</div>
+          <div className="cq-metric-val"><span className="cq-mono">{estimatedAddedValue.toFixed(2)}</span> <span>EUR</span></div>
+          <div className="cq-metric-sub">Offset + lift conversion</div>
+        </div>
       </div>
 
       {/* ── Revenue breakdown ── */}
-      <div style={{ ...card, marginBottom: 20 }}>
-        <div style={{ padding: "16px 20px", borderBottom: "1px solid #f3f4f6" }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>Decomposition du revenu</div>
+      <div className="cq-glass cq-anim" style={{ animationDelay: ".15s" }}>
+        <div className="cq-glass-head">
+          <div className="cq-glass-icon" style={{ background: COLORS.greenLight }}>
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 2v20M17 7l-5-5-5 5M4 12h16" stroke={COLORS.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </div>
+          <div>
+            <div className="cq-glass-title">Decomposition du revenu</div>
+          </div>
         </div>
-        <div style={{ padding: 20 }}>
-          <RevenueBar
-            label="Revenu offset direct"
-            value={revenueBreakdown.offsetDirect}
-            max={maxRevBar}
-            color="#059669"
-          />
-          <RevenueBar
-            label="Lift conversion estime"
-            value={revenueBreakdown.conversionLift}
-            max={maxRevBar}
-            color="#6366f1"
-          />
-          <div style={{ marginTop: 16, padding: "12px 16px", backgroundColor: "#f9fafb", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>Panier moyen offset</span>
-            <span style={{ fontSize: 16, fontWeight: 700, color: "#111827", fontVariantNumeric: "tabular-nums" }}>
+        <div className="cq-glass-body">
+          <RevenueBar label="Revenu offset direct" value={revenueBreakdown.offsetDirect} max={maxRevBar} color={COLORS.green} />
+          <RevenueBar label="Lift conversion estime" value={revenueBreakdown.conversionLift} max={maxRevBar} color={COLORS.dark} />
+          <div className="roi-aov">
+            <span style={{ fontSize: 13, fontWeight: 600, color: COLORS.text }}>Panier moyen offset</span>
+            <span className="cq-mono" style={{ fontSize: 16, fontWeight: 700, color: COLORS.dark }}>
               {revenueBreakdown.avgOrderValueLift.toFixed(2)} EUR
             </span>
           </div>
@@ -208,117 +243,72 @@ export default function ROIDashboard() {
       </div>
 
       {/* ── Impact sur la conversion ── */}
-      <div style={{ ...card, marginBottom: 20 }}>
-        <div style={{ height: 3, background: "linear-gradient(90deg, #6366f1, #8b5cf6)" }} />
-        <div style={{ padding: "16px 20px", borderBottom: "1px solid #f3f4f6" }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>Impact sur la conversion</div>
+      <div className="cq-glass cq-anim" style={{ animationDelay: ".2s" }}>
+        <div className="cq-glass-head">
+          <div className="cq-glass-icon" style={{ background: COLORS.greenLight }}>
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke={COLORS.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </div>
+          <div>
+            <div className="cq-glass-title">Impact sur la conversion</div>
+          </div>
         </div>
-        <div style={{ padding: 20 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 40px 1fr", gap: 0, alignItems: "center" }}>
-            {/* Before */}
-            <div style={{
-              padding: 20, borderRadius: 12, textAlign: "center",
-              backgroundColor: "#f9fafb", border: "1px solid #e5e7eb",
-            }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>
-                Sans badge eco
-              </div>
-              <div style={{ fontSize: 28, fontWeight: 700, color: "#6b7280", fontVariantNumeric: "tabular-nums" }}>
-                {productsWithoutBadge}
-              </div>
-              <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}>produits</div>
-              <div style={{
-                marginTop: 12, padding: "6px 12px", borderRadius: 6,
-                backgroundColor: "#fee2e2", color: "#dc2626",
-                fontSize: 12, fontWeight: 600, display: "inline-block",
-              }}>
-                Conversion standard
-              </div>
+        <div className="cq-glass-body">
+          <div className="roi-compare">
+            <div className="roi-compare-box roi-compare-before">
+              <div className="cq-label" style={{ marginBottom: 8 }}>Sans badge eco</div>
+              <div className="cq-display" style={{ fontSize: 28, color: COLORS.textMuted }}>{productsWithoutBadge}</div>
+              <div style={{ fontSize: 12, color: COLORS.textMuted, marginTop: 4 }}>produits</div>
+              <span className="cq-pill cq-pill-red" style={{ marginTop: 12, display: "inline-flex" }}>Conversion standard</span>
             </div>
-
-            {/* Arrow */}
-            <div style={{ textAlign: "center", fontSize: 20, color: "#d1d5db" }}>
-              {"\u2192"}
-            </div>
-
-            {/* After */}
-            <div style={{
-              padding: 20, borderRadius: 12, textAlign: "center",
-              backgroundColor: "#f0fdf4", border: "1px solid #bbf7d0",
-            }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: "#16a34a", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>
-                Avec badge eco
-              </div>
-              <div style={{ fontSize: 28, fontWeight: 700, color: "#16a34a", fontVariantNumeric: "tabular-nums" }}>
-                {productsWithBadge}
-              </div>
-              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>produits</div>
-              <div style={{
-                marginTop: 12, padding: "6px 12px", borderRadius: 6,
-                backgroundColor: "#dcfce7", color: "#16a34a",
-                fontSize: 12, fontWeight: 600, display: "inline-block",
-              }}>
-                +2-4% conversion
-              </div>
+            <div style={{ textAlign: "center", fontSize: 20, color: COLORS.textFaint }}>&#8594;</div>
+            <div className="roi-compare-box roi-compare-after">
+              <div className="cq-label" style={{ marginBottom: 8, color: COLORS.green }}>Avec badge eco</div>
+              <div className="cq-display" style={{ fontSize: 28, color: COLORS.green }}>{productsWithBadge}</div>
+              <div style={{ fontSize: 12, color: COLORS.textMuted, marginTop: 4 }}>produits</div>
+              <span className="cq-pill cq-pill-green" style={{ marginTop: 12, display: "inline-flex" }}>+2-4% conversion</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* ── A/B Test insights ── */}
-      <div style={{ ...card, marginBottom: 20 }}>
-        <div style={{ padding: "16px 20px", borderBottom: "1px solid #f3f4f6", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>Insights A/B Tests</div>
-          <Link
-            to="/app/abtest"
-            style={{ fontSize: 12, fontWeight: 600, color: "#6366f1", textDecoration: "none" }}
-          >
-            Voir tous les tests {"\u2192"}
+      <div className="cq-glass cq-anim" style={{ animationDelay: ".25s" }}>
+        <div className="cq-glass-head" style={{ justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div className="cq-glass-icon" style={{ background: COLORS.blueLight }}>
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h6" stroke={COLORS.blue} strokeWidth="2" strokeLinecap="round"/></svg>
+            </div>
+            <div className="cq-glass-title">Insights A/B Tests</div>
+          </div>
+          <Link to="/app/abtest" style={{ fontSize: 12, fontWeight: 600, color: COLORS.green, textDecoration: "none" }}>
+            Voir tous les tests &#8594;
           </Link>
         </div>
-        <div style={{ padding: 20 }}>
+        <div className="cq-glass-body">
           {abTestInsights.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "20px 0" }}>
-              <div style={{ fontSize: 13, color: "#9ca3af", marginBottom: 8 }}>
-                Aucun test A/B termine pour le moment
+            <div className="cq-empty">
+              <div className="cq-empty-icon">
+                <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h6" stroke={COLORS.textMuted} strokeWidth="2" strokeLinecap="round"/></svg>
               </div>
-              <Link
-                to="/app/abtest"
-                style={{
-                  display: "inline-block", padding: "8px 20px",
-                  borderRadius: 8, fontSize: 13, fontWeight: 600,
-                  color: "white", textDecoration: "none",
-                  background: "linear-gradient(135deg, #6366f1, #4f46e5)",
-                }}
-              >
+              <div className="cq-empty-t">Aucun test A/B termine</div>
+              <div className="cq-empty-d">Lancez votre premier test pour optimiser vos conversions</div>
+              <Link to="/app/abtest" className="cq-btn cq-btn-green" style={{ marginTop: 16 }}>
                 Lancer un test
               </Link>
             </div>
           ) : (
             <div>
               {abTestInsights.map((t) => (
-                <div key={t.id} style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  padding: "10px 0", borderBottom: "1px solid #f9fafb",
-                }}>
+                <div key={t.id} className="roi-test-row">
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{
-                      padding: "2px 8px", borderRadius: 4, fontSize: 10,
-                      fontWeight: 600, color: "#6366f1", backgroundColor: "#ede9fe",
-                    }}>
-                      {t.testType}
-                    </span>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: "#374151" }}>{t.name}</span>
+                    <span className="cq-pill cq-pill-blue">{t.testType}</span>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: COLORS.text }}>{t.name}</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <span style={{ fontSize: 12, color: "#6b7280" }}>
+                    <span className="cq-mono" style={{ fontSize: 12, color: COLORS.textMuted }}>
                       A: {(t.convRateA * 100).toFixed(1)}% | B: {(t.convRateB * 100).toFixed(1)}%
                     </span>
-                    <span style={{
-                      padding: "3px 10px", borderRadius: 6, fontSize: 12, fontWeight: 700,
-                      color: t.uplift > 0 ? "#16a34a" : "#dc2626",
-                      backgroundColor: t.uplift > 0 ? "#dcfce7" : "#fee2e2",
-                    }}>
+                    <span className={`cq-pill ${t.uplift > 0 ? "cq-pill-green" : "cq-pill-red"}`}>
                       {t.uplift > 0 ? "+" : ""}{t.uplift.toFixed(1)}% uplift
                     </span>
                   </div>
@@ -331,79 +321,47 @@ export default function ROIDashboard() {
 
       {/* ── Recommendations ── */}
       {recommendations.length > 0 && (
-        <div style={{ ...card, marginBottom: 20 }}>
-          <div style={{ height: 3, background: "linear-gradient(90deg, #f59e0b, #f97316)" }} />
-          <div style={{ padding: "16px 20px", borderBottom: "1px solid #f3f4f6" }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>Pour augmenter votre ROI...</div>
+        <div className="cq-glass cq-anim" style={{ animationDelay: ".3s" }}>
+          <div className="cq-glass-head">
+            <div className="cq-glass-icon" style={{ background: COLORS.amberLight }}>
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l.146.146A3 3 0 0118 21H6a3 3 0 01-2.682-4.658l.146-.146z" stroke={COLORS.amber} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </div>
+            <div>
+              <div className="cq-glass-title">Pour augmenter votre ROI...</div>
+            </div>
           </div>
           <div style={{ padding: "8px 0" }}>
             {recommendations.map((rec, i) => (
-              <div key={i} style={{
-                display: "flex", alignItems: "flex-start", gap: 14,
-                padding: "14px 20px", borderBottom: i < recommendations.length - 1 ? "1px solid #f9fafb" : "none",
-              }}>
-                <div style={{
-                  width: 28, height: 28, borderRadius: 8,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 12, fontWeight: 700, flexShrink: 0,
-                  backgroundColor: "#fef3c7", color: "#d97706",
-                }}>
-                  {i + 1}
-                </div>
+              <div key={i} className="roi-rec-item">
+                <div className="roi-rec-num">{i + 1}</div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#111827", marginBottom: 2 }}>
-                    {rec.title}
-                  </div>
-                  <div style={{ fontSize: 12, color: "#6b7280", lineHeight: 1.5 }}>
-                    {rec.description}
-                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: COLORS.dark, marginBottom: 2 }}>{rec.title}</div>
+                  <div style={{ fontSize: 12, color: COLORS.textMuted, lineHeight: 1.5 }}>{rec.description}</div>
                 </div>
-                <span style={{
-                  padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 700,
-                  color: "#16a34a", backgroundColor: "#dcfce7",
-                  whiteSpace: "nowrap", flexShrink: 0,
-                }}>
-                  {rec.impact}
-                </span>
+                <span className="cq-pill cq-pill-green" style={{ flexShrink: 0 }}>{rec.impact}</span>
               </div>
             ))}
           </div>
         </div>
       )}
-    </s-page>
+    </div>
   );
 }
 
 // ── Sub-components ─────────────────────────────────────
-
-function MetricCard({ accent, label, value, sub }: { accent: string; label: string; value: string; sub: string }) {
-  return (
-    <div style={{ ...card, padding: "20px 20px 16px", position: "relative", overflow: "hidden" }}>
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, backgroundColor: accent }} />
-      <div style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</div>
-      <div style={{ fontSize: 28, fontWeight: 700, color: "#111827", marginTop: 4, fontVariantNumeric: "tabular-nums" }}>{value}</div>
-      <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>{sub}</div>
-    </div>
-  );
-}
 
 function RevenueBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
   const pct = max > 0 ? (value / max) * 100 : 0;
   return (
     <div style={{ marginBottom: 14 }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-        <span style={{ fontSize: 13, fontWeight: 500, color: "#374151" }}>{label}</span>
-        <span style={{ fontSize: 13, fontWeight: 700, color: "#111827", fontVariantNumeric: "tabular-nums" }}>
+        <span style={{ fontSize: 13, fontWeight: 500, color: COLORS.text }}>{label}</span>
+        <span className="cq-mono" style={{ fontSize: 13, fontWeight: 700, color: COLORS.dark }}>
           {value.toFixed(2)} EUR
         </span>
       </div>
-      <div style={{ width: "100%", height: 10, backgroundColor: "#f3f4f6", borderRadius: 5, overflow: "hidden" }}>
-        <div style={{
-          width: `${pct}%`, height: "100%",
-          backgroundColor: color, borderRadius: 5,
-          transition: "width 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
-          minWidth: value > 0 ? 4 : 0,
-        }} />
+      <div className="roi-bar-track">
+        <div className="roi-bar-fill" style={{ width: `${pct}%`, backgroundColor: color, minWidth: value > 0 ? 4 : 0 }} />
       </div>
     </div>
   );

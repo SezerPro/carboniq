@@ -13,6 +13,7 @@ import {
   getReductionTips,
   markTipApplied,
 } from "../lib/reduction/engine.server";
+import { BASE_CSS, INIT_SCRIPT, COLORS } from "../lib/ui/shared-styles";
 
 // -- Loader --
 
@@ -110,16 +111,77 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   return { error: "Unknown intent" };
 };
 
-// -- Category icons --
+// -- Page CSS --
 
-const CATEGORY_ICONS: Record<string, string> = {
-  emballage: "\u{1F4E6}",
-  transport: "\u{1F30D}",
-  "matériaux": "\u267B\uFE0F",
-  poids: "\u2696\uFE0F",
-  logistique: "\u{1F69B}",
-  "économie_circulaire": "\u{1F504}",
-  "saisonnalité": "\u{1F33F}",
+const PAGE_CSS = `
+/* Ring */
+.cq-ring-wrap{position:relative;width:128px;height:128px;flex-shrink:0}
+.cq-ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.cq-ring-val{font-family:'Instrument Serif',Georgia,serif;font-size:32px;color:${COLORS.dark};line-height:1}
+.cq-ring-sub{font-size:11px;color:${COLORS.textMuted}}
+
+/* Summary hero */
+.cq-red-hero{
+  background:rgba(74,124,89,.06);border:1px solid rgba(74,124,89,.12);
+  border-radius:20px;padding:24px;margin-bottom:16px;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;
+}
+.cq-red-hero-label{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${COLORS.green}}
+.cq-red-hero-val{font-family:'Instrument Serif',Georgia,serif;font-size:32px;color:${COLORS.dark};line-height:1.1;margin-top:6px}
+.cq-red-hero-val .unit{font-family:'DM Mono',monospace;font-size:14px;color:${COLORS.textMuted};margin-left:4px}
+.cq-red-hero-badge{
+  background:rgba(253,252,251,.7);backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.6);border-radius:14px;
+  padding:12px 20px;text-align:center;
+}
+
+/* Stats grid */
+.cq-red-stats{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.cq-red-stat-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${COLORS.textMuted}}
+.cq-red-stat-val{font-family:'DM Mono',monospace;font-size:20px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+
+/* Tip row */
+.cq-tip{
+  display:flex;align-items:flex-start;gap:14px;padding:16px 24px;
+  border-bottom:1px solid rgba(164,156,144,.05);transition:background .2s ease;
+}
+.cq-tip:last-child{border-bottom:none}
+.cq-tip:hover{background:rgba(74,124,89,.02)}
+.cq-tip-applied{background:rgba(74,124,89,.04);border-left:3px solid ${COLORS.green}}
+.cq-tip-icon{
+  width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font-size:18px;flex-shrink:0;background:rgba(164,156,144,.06);
+}
+.cq-tip-icon-done{background:rgba(74,124,89,.1)}
+.cq-tip-title{font-size:13px;font-weight:700;color:${COLORS.dark}}
+.cq-tip-desc{font-size:12px;color:${COLORS.textMuted};line-height:1.55;margin-top:4px}
+.cq-tip-date{font-size:11px;color:${COLORS.green};margin-top:4px}
+
+/* Tip action button */
+.cq-tip-btn{
+  padding:6px 16px;border-radius:10px;font-family:'DM Sans',sans-serif;
+  font-size:12px;font-weight:600;border:1px solid;cursor:pointer;
+  transition:all .2s ease;flex-shrink:0;
+}
+.cq-tip-btn-apply{color:${COLORS.green};background:rgba(74,124,89,.06);border-color:rgba(74,124,89,.15)}
+.cq-tip-btn-apply:hover{background:rgba(74,124,89,.12)}
+.cq-tip-btn-remove{color:${COLORS.red};background:rgba(185,28,28,.04);border-color:rgba(185,28,28,.12)}
+.cq-tip-btn-remove:hover{background:rgba(185,28,28,.08)}
+
+/* Progress bar */
+.cq-progress-track{width:100%;height:10px;background:rgba(164,156,144,.08);border-radius:6px;overflow:hidden}
+.cq-progress-fill{height:100%;background:linear-gradient(90deg,${COLORS.green},#6AA87A);border-radius:6px;transition:width .6s ease}
+`;
+
+// -- Category SVG icons --
+const CATEGORY_SVGS: Record<string, string> = {
+  emballage: `<svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke="${COLORS.green}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  transport: `<svg width="18" height="18" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="${COLORS.green}" stroke-width="1.5"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z" stroke="${COLORS.green}" stroke-width="1.5"/></svg>`,
+  "matériaux": `<svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M7 19H3v-4m14 4h4v-4M3 9V5h4m14 0h-4M12 8v8m-4-4h8" stroke="${COLORS.green}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  poids: `<svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M12 3v1m0 16v1m-9-9h1m16 0h1M5.6 5.6l.7.7m12.4 12.4l-.7-.7M5.6 18.4l.7-.7m12.4-12.4l-.7.7M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0z" stroke="${COLORS.green}" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  logistique: `<svg width="18" height="18" fill="none" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="2" stroke="${COLORS.green}" stroke-width="1.5"/><path d="M16 8h4l3 3v5h-7V8z" stroke="${COLORS.green}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="5.5" cy="18.5" r="2.5" stroke="${COLORS.green}" stroke-width="1.5"/><circle cx="18.5" cy="18.5" r="2.5" stroke="${COLORS.green}" stroke-width="1.5"/></svg>`,
+  "économie_circulaire": `<svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4" stroke="${COLORS.green}" stroke-width="1.5" stroke-linecap="round"/><path d="M21 3v6h-6" stroke="${COLORS.green}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  "saisonnalité": `<svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c1 0 0-5 2-7s7-1 7-2c0-5.5-4.5-10-9-10z" stroke="${COLORS.green}" stroke-width="1.5"/></svg>`,
 };
 
 // -- Component --
@@ -147,457 +209,243 @@ export default function Reduction() {
         )
       : 0;
 
+  const ringColor =
+    ringPct >= 75
+      ? COLORS.green
+      : ringPct >= 50
+        ? "#6AA87A"
+        : ringPct >= 25
+          ? COLORS.amber
+          : COLORS.textFaint;
+
   return (
-    <s-page heading="Réduire l'empreinte">
-      <s-button
-        slot="primary-action"
-        onClick={handleRegenerate}
-        {...(isRegenerating ? { loading: true } : {})}
-      >
-        Recalculer les suggestions
-      </s-button>
+    <>
+      <style dangerouslySetInnerHTML={{ __html: BASE_CSS + PAGE_CSS }} />
+      <script dangerouslySetInnerHTML={{ __html: INIT_SCRIPT }} />
 
-      {/* Summary card */}
-      <div
-        style={{
-          background: "linear-gradient(135deg, #ecfdf5, #d1fae5)",
-          border: "1px solid #a7f3d0",
-          borderRadius: 16,
-          padding: 24,
-          marginBottom: 20,
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: 16,
-          }}
-        >
+      <div className="cq-page">
+        {/* Page header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
           <div>
-            <div
-              style={{
-                fontSize: 14,
-                fontWeight: 600,
-                color: "#065f46",
-                marginBottom: 4,
-              }}
-            >
-              Potentiel de réduction estimé
-            </div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: "#047857" }}>
-              -{totalPotentialSaving} kg CO2 ({totalPotentialPct}%)
-            </div>
+            <h1 className="cq-display" style={{ fontSize: 28, color: COLORS.dark }}>
+              Réduire l'empreinte
+            </h1>
+            <p style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 4 }}>
+              Suggestions personnalisées pour diminuer votre impact carbone
+            </p>
           </div>
-          <div
-            style={{
-              background: "white",
-              borderRadius: 12,
-              padding: "12px 20px",
-              textAlign: "center",
-            }}
+          <button
+            className="cq-btn cq-btn-dark"
+            onClick={handleRegenerate}
+            disabled={isRegenerating}
           >
-            <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 2 }}>
-              Engagements pris
-            </div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: "#16a34a" }}>
-              {progress?.appliedTips ?? 0} / {progress?.totalTips ?? 0}
-            </div>
-          </div>
+            {isRegenerating ? "Calcul en cours..." : "Recalculer les suggestions"}
+          </button>
         </div>
-      </div>
 
-      {/* Progress ring + stats */}
-      {progress && (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "auto 1fr",
-            gap: 24,
-            background: "#fff",
-            borderRadius: 12,
-            border: "1px solid #e5e7eb",
-            padding: 24,
-            marginBottom: 20,
-            alignItems: "center",
-          }}
-        >
-          {/* Ring */}
-          <div style={{ position: "relative", width: 128, height: 128 }}>
-            <svg width="128" height="128" viewBox="0 0 128 128">
-              <circle
-                cx="64"
-                cy="64"
-                r="54"
-                fill="none"
-                stroke="#f3f4f6"
-                strokeWidth="10"
-              />
-              <circle
-                cx="64"
-                cy="64"
-                r="54"
-                fill="none"
-                stroke={
-                  ringPct >= 75
-                    ? "#16a34a"
-                    : ringPct >= 50
-                      ? "#65a30d"
-                      : ringPct >= 25
-                        ? "#d97706"
-                        : "#e5e7eb"
-                }
-                strokeWidth="10"
-                strokeLinecap="round"
-                strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
-                transform="rotate(-90 64 64)"
-                style={{
-                  transition:
-                    "stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
-                }}
-              />
-            </svg>
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <span
-                style={{ fontSize: 28, fontWeight: 700, color: "#111827" }}
-              >
-                {ringPct}
+        {/* Summary hero */}
+        <div className="cq-red-hero cq-anim">
+          <div>
+            <div className="cq-red-hero-label">Potentiel de réduction estimé</div>
+            <div className="cq-red-hero-val">
+              <span className="cq-mono">-{totalPotentialSaving}</span>
+              <span className="unit">kgCO₂e</span>
+              <span style={{ fontSize: 16, color: COLORS.textMuted, marginLeft: 8 }}>
+                ({totalPotentialPct}%)
               </span>
-              <span style={{ fontSize: 11, color: "#6b7280" }}>/ 100</span>
             </div>
           </div>
-
-          {/* Stats grid */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 16,
-            }}
-          >
-            <StatBox
-              label="Empreinte actuelle"
-              value={`${progress.totalCarbonKg} kg`}
-              color="#374151"
-            />
-            <StatBox
-              label="Économie potentielle"
-              value={`${progress.estimatedSavingKg} kg`}
-              color="#d97706"
-            />
-            <StatBox
-              label="Engagements pris"
-              value={`${progress.achievedSavingKg} kg`}
-              color="#16a34a"
-            />
-            <StatBox
-              label="Réduction estimée"
-              value={`${progress.reductionPct}%`}
-              color="#6366f1"
-            />
+          <div className="cq-red-hero-badge">
+            <div className="cq-label" style={{ marginBottom: 4 }}>Engagements pris</div>
+            <div className="cq-mono" style={{ fontSize: 24, fontWeight: 700, color: COLORS.green }}>
+              {progress?.appliedTips ?? 0}
+              <span style={{ color: COLORS.textMuted, fontSize: 14 }}> / {progress?.totalTips ?? 0}</span>
+            </div>
           </div>
         </div>
-      )}
 
-      {/* Tips list */}
-      <div
-        style={{
-          background: "#fff",
-          borderRadius: 12,
-          border: "1px solid #e5e7eb",
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            padding: "16px 20px",
-            borderBottom: "1px solid #f3f4f6",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <span style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>
-            Recommandations
-          </span>
-          <span style={{ fontSize: 12, color: "#9ca3af" }}>
-            {tips.length} suggestion{tips.length !== 1 ? "s" : ""}
-          </span>
-        </div>
-
-        {tips.length === 0 ? (
-          <div style={{ padding: "40px 20px", textAlign: "center" }}>
-            <div style={{ fontSize: 28, marginBottom: 8 }}>
-              {"\u{1F50D}"}
-            </div>
-            <div style={{ fontSize: 14, color: "#6b7280" }}>
-              Aucune suggestion pour le moment. Ajoutez des produits et
-              recalculez.
-            </div>
-          </div>
-        ) : (
-          <div>
-            {tips.map((tip, i) => (
-              <div
-                key={tip.id}
-                style={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: 14,
-                  padding: "16px 20px",
-                  borderBottom:
-                    i < tips.length - 1 ? "1px solid #f9fafb" : "none",
-                  backgroundColor: tip.isApplied ? "#f0fdf4" : "transparent",
-                  borderLeft: tip.isApplied
-                    ? "3px solid #16a34a"
-                    : "3px solid transparent",
-                  transition: "background-color 0.2s ease",
-                }}
-              >
-                {/* Icon */}
-                <div
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 10,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 20,
-                    backgroundColor: tip.isApplied ? "#dcfce7" : "#f3f4f6",
-                    flexShrink: 0,
-                  }}
-                >
-                  {tip.isApplied
-                    ? "\u2705"
-                    : CATEGORY_ICONS[tip.category] ?? "\u{1F4A1}"}
+        {/* Progress ring + stats */}
+        {progress && (
+          <div className="cq-glass cq-anim" style={{ animationDelay: ".06s" }}>
+            <div className="cq-glass-body" style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: 24, alignItems: "center" }}>
+              {/* Ring */}
+              <div className="cq-ring-wrap">
+                <svg width="128" height="128" viewBox="0 0 128 128">
+                  <circle cx="64" cy="64" r="54" fill="none" stroke="rgba(164,156,144,.08)" strokeWidth="10" />
+                  <circle
+                    cx="64" cy="64" r="54" fill="none"
+                    stroke={ringColor}
+                    strokeWidth="10" strokeLinecap="round"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={strokeDashoffset}
+                    transform="rotate(-90 64 64)"
+                    style={{ transition: "stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1)" }}
+                  />
+                </svg>
+                <div className="cq-ring-center">
+                  <span className="cq-ring-val">{ringPct}</span>
+                  <span className="cq-ring-sub">/ 100</span>
                 </div>
+              </div>
 
-                {/* Content */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      marginBottom: 4,
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 600,
-                        color: "#111827",
-                      }}
-                    >
-                      {tip.title}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        padding: "2px 8px",
-                        borderRadius: 6,
-                        color: "#16a34a",
-                        backgroundColor: "#dcfce7",
-                      }}
-                    >
-                      -{tip.potentialSaving.toFixed(1)} kg CO2
-                    </span>
-                    {tip.potentialSavingPct != null && (
-                      <span
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 600,
-                          padding: "2px 8px",
-                          borderRadius: 6,
-                          color: "#d97706",
-                          backgroundColor: "#fef3c7",
-                        }}
-                      >
-                        -{tip.potentialSavingPct}%
-                      </span>
+              {/* Stats */}
+              <div className="cq-red-stats">
+                <div>
+                  <div className="cq-red-stat-label">Empreinte actuelle</div>
+                  <div className="cq-red-stat-val" style={{ color: COLORS.dark }}>
+                    {progress.totalCarbonKg} <span style={{ fontSize: 12, color: COLORS.textMuted }}>kgCO₂e</span>
+                  </div>
+                </div>
+                <div>
+                  <div className="cq-red-stat-label">Économie potentielle</div>
+                  <div className="cq-red-stat-val" style={{ color: COLORS.amber }}>
+                    {progress.estimatedSavingKg} <span style={{ fontSize: 12, color: COLORS.textMuted }}>kgCO₂e</span>
+                  </div>
+                </div>
+                <div>
+                  <div className="cq-red-stat-label">Engagements pris</div>
+                  <div className="cq-red-stat-val" style={{ color: COLORS.green }}>
+                    {progress.achievedSavingKg} <span style={{ fontSize: 12, color: COLORS.textMuted }}>kgCO₂e</span>
+                  </div>
+                </div>
+                <div>
+                  <div className="cq-red-stat-label">Réduction estimée</div>
+                  <div className="cq-red-stat-val" style={{ color: COLORS.green }}>
+                    {progress.reductionPct}<span style={{ fontSize: 12, color: COLORS.textMuted }}>%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tips list */}
+        <div className="cq-glass cq-anim" style={{ animationDelay: ".09s" }}>
+          <div className="cq-glass-head">
+            <div className="cq-glass-icon" style={{ background: COLORS.greenLight }}>
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                <path d="M9 18h6m-5-2a7 7 0 1 1 4 0M12 2v1" stroke={COLORS.green} strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div className="cq-glass-title">Recommandations</div>
+            </div>
+            <span className="cq-pill cq-pill-gray">
+              {tips.length} suggestion{tips.length !== 1 ? "s" : ""}
+            </span>
+          </div>
+
+          {tips.length === 0 ? (
+            <div className="cq-empty">
+              <div className="cq-empty-icon">
+                <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="8" stroke={COLORS.textMuted} strokeWidth="1.5" />
+                  <path d="m21 21-4.35-4.35" stroke={COLORS.textMuted} strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </div>
+              <div className="cq-empty-t">Aucune suggestion</div>
+              <div className="cq-empty-d">
+                Ajoutez des produits et recalculez pour obtenir des recommandations personnalisées.
+              </div>
+            </div>
+          ) : (
+            <div>
+              {tips.map((tip) => (
+                <div
+                  key={tip.id}
+                  className={`cq-tip${tip.isApplied ? " cq-tip-applied" : ""}`}
+                >
+                  <div className={`cq-tip-icon${tip.isApplied ? " cq-tip-icon-done" : ""}`}>
+                    {tip.isApplied ? (
+                      <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+                        <path d="M20 6L9 17l-5-5" stroke={COLORS.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    ) : (
+                      <span dangerouslySetInnerHTML={{
+                        __html: CATEGORY_SVGS[tip.category] ?? `<svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M9 18h6m-5-2a7 7 0 1 1 4 0M12 2v1" stroke="${COLORS.green}" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+                      }} />
                     )}
                   </div>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: "#6b7280",
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    {tip.description}
-                  </div>
-                  {tip.isApplied && tip.appliedAt && (
-                    <div
-                      style={{
-                        fontSize: 11,
-                        color: "#16a34a",
-                        marginTop: 4,
-                      }}
-                    >
-                      Engagement pris le{" "}
-                      {new Date(tip.appliedAt).toLocaleDateString("fr-FR")}
-                    </div>
-                  )}
-                </div>
 
-                {/* Action button */}
-                <fetcher.Form method="POST" style={{ flexShrink: 0 }}>
-                  <input
-                    type="hidden"
-                    name="intent"
-                    value={tip.isApplied ? "unapply" : "apply"}
-                  />
-                  <input type="hidden" name="tipId" value={tip.id} />
-                  <button
-                    type="submit"
-                    style={{
-                      padding: "6px 14px",
-                      borderRadius: 8,
-                      fontSize: 12,
-                      fontWeight: 600,
-                      border: "1px solid",
-                      cursor: "pointer",
-                      color: tip.isApplied ? "#dc2626" : "#16a34a",
-                      backgroundColor: tip.isApplied ? "#fef2f2" : "#f0fdf4",
-                      borderColor: tip.isApplied ? "#fecaca" : "#bbf7d0",
-                    }}
-                  >
-                    {tip.isApplied ? "Retirer" : "M'engager"}
-                  </button>
-                </fetcher.Form>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
+                      <span className="cq-tip-title">{tip.title}</span>
+                      <span className="cq-pill cq-pill-green">
+                        <span className="cq-mono">-{tip.potentialSaving.toFixed(1)}</span> kgCO₂e
+                      </span>
+                      {tip.potentialSavingPct != null && (
+                        <span className="cq-pill cq-pill-amber">
+                          -{tip.potentialSavingPct}%
+                        </span>
+                      )}
+                    </div>
+                    <div className="cq-tip-desc">{tip.description}</div>
+                    {tip.isApplied && tip.appliedAt && (
+                      <div className="cq-tip-date">
+                        Engagement pris le {new Date(tip.appliedAt).toLocaleDateString("fr-FR")}
+                      </div>
+                    )}
+                  </div>
+
+                  <fetcher.Form method="POST" style={{ flexShrink: 0 }}>
+                    <input type="hidden" name="intent" value={tip.isApplied ? "unapply" : "apply"} />
+                    <input type="hidden" name="tipId" value={tip.id} />
+                    <button
+                      type="submit"
+                      className={`cq-tip-btn ${tip.isApplied ? "cq-tip-btn-remove" : "cq-tip-btn-apply"}`}
+                    >
+                      {tip.isApplied ? "Retirer" : "M'engager"}
+                    </button>
+                  </fetcher.Form>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Legal disclaimer */}
+        <div className="cq-warn cq-anim" style={{ animationDelay: ".12s" }}>
+          <svg width="18" height="18" fill="none" viewBox="0 0 24 24" style={{ flexShrink: 0, marginTop: 1 }}>
+            <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke={COLORS.amber} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.dark, marginBottom: 4 }}>
+              Avertissement — Estimations non vérifiées
+            </div>
+            <div style={{ fontSize: 11.5, color: COLORS.textMuted, lineHeight: 1.6 }}>
+              Les économies affichées sont des <strong style={{ color: COLORS.text }}>estimations basées sur des moyennes sectorielles ADEME</strong>.
+              Elles ne constituent pas une mesure réelle de réduction. Les économies effectives dépendent
+              de la mise en œuvre concrète par le marchand. Conformément à la directive EU 2024/825 (EmpCo),
+              aucune claim environnementale ne doit être communiquée aux clients sans preuve vérifiable.
+              Le bouton &quot;M&apos;engager&quot; enregistre une intention, pas une action vérifiée.
+            </div>
+          </div>
+        </div>
+
+        {/* Engagement progress */}
+        {progress && (
+          <div className="cq-glass cq-anim" style={{ animationDelay: ".15s" }}>
+            <div className="cq-glass-body" style={{ textAlign: "center" }}>
+              <div className="cq-label" style={{ marginBottom: 12 }}>
+                Score d&apos;engagement : <span className="cq-mono" style={{ color: COLORS.green }}>{progress.reductionScore}/100</span>
               </div>
-            ))}
+              <div className="cq-progress-track">
+                <div className="cq-progress-fill" style={{ width: `${progress.reductionScore}%` }} />
+              </div>
+              <div style={{ fontSize: 12.5, color: COLORS.textMuted, marginTop: 12 }}>
+                {progress.reductionScore >= 75
+                  ? "Excellent ! Vous êtes un leader de la réduction carbone."
+                  : progress.reductionScore >= 50
+                    ? "Bien joué ! Continuez à appliquer les recommandations."
+                    : progress.reductionScore >= 25
+                      ? "Bon début ! Chaque action compte pour la planète."
+                      : "Commencez par appliquer quelques recommandations simples."}
+              </div>
+            </div>
           </div>
         )}
       </div>
-
-      {/* Legal disclaimer */}
-      <div style={{
-        background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 12,
-        padding: "14px 20px", marginTop: 20,
-        display: "flex", alignItems: "flex-start", gap: 10,
-      }}>
-        <span style={{ fontSize: 16, flexShrink: 0 }}>⚠️</span>
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "#92400e", marginBottom: 4 }}>
-            Avertissement — Estimations non vérifiées
-          </div>
-          <div style={{ fontSize: 11, color: "#a16207", lineHeight: 1.5 }}>
-            Les économies affichées sont des <strong>estimations basées sur des moyennes sectorielles ADEME</strong>.
-            Elles ne constituent pas une mesure réelle de réduction. Les économies effectives dépendent
-            de la mise en œuvre concrète par le marchand. Conformément à la directive EU 2024/825 (EmpCo),
-            aucune claim environnementale ne doit être communiquée aux clients sans preuve vérifiable.
-            Le bouton &quot;M&#39;engager&quot; enregistre une intention, pas une action vérifiée.
-          </div>
-        </div>
-      </div>
-
-      {/* Motivational section */}
-      {progress && (
-        <div
-          style={{
-            background: "linear-gradient(135deg, #f0fdf4, #ecfdf5)",
-            border: "1px solid #a7f3d0",
-            borderRadius: 12,
-            padding: 24,
-            marginTop: 20,
-            textAlign: "center",
-          }}
-        >
-          <div
-            style={{
-              fontSize: 14,
-              fontWeight: 600,
-              color: "#065f46",
-              marginBottom: 8,
-            }}
-          >
-            Score d&#39;engagement : {progress.reductionScore}/100
-          </div>
-          <div
-            style={{
-              width: "100%",
-              height: 12,
-              backgroundColor: "#d1fae5",
-              borderRadius: 6,
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                width: `${progress.reductionScore}%`,
-                height: "100%",
-                background: "linear-gradient(90deg, #22c55e, #16a34a)",
-                borderRadius: 6,
-                transition: "width 0.6s ease",
-              }}
-            />
-          </div>
-          <div
-            style={{ fontSize: 12, color: "#047857", marginTop: 8 }}
-          >
-            {progress.reductionScore >= 75
-              ? "Excellent ! Vous êtes un leader de la réduction carbone."
-              : progress.reductionScore >= 50
-                ? "Bien joué ! Continuez à appliquer les recommandations."
-                : progress.reductionScore >= 25
-                  ? "Bon début ! Chaque action compte pour la planète."
-                  : "Commencez par appliquer quelques recommandations simples."}
-          </div>
-        </div>
-      )}
-    </s-page>
-  );
-}
-
-function StatBox({
-  label,
-  value,
-  color,
-}: {
-  label: string;
-  value: string;
-  color: string;
-}) {
-  return (
-    <div>
-      <div
-        style={{
-          fontSize: 11,
-          color: "#9ca3af",
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
-        }}
-      >
-        {label}
-      </div>
-      <div
-        style={{
-          fontSize: 20,
-          fontWeight: 700,
-          color,
-          fontVariantNumeric: "tabular-nums",
-          marginTop: 2,
-        }}
-      >
-        {value}
-      </div>
-    </div>
+    </>
   );
 }
 

@@ -96,25 +96,104 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   };
 };
 
-// ── Styles ─────────────────────────────────────────────
+// ── Styles ──
 
-const card = {
-  background: "#fff",
-  borderRadius: 12,
-  border: "1px solid #e5e7eb",
-  overflow: "hidden" as const,
-};
+const CSS = `
+.ca *{box-sizing:border-box;margin:0;padding:0}
+.ca{
+  font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+  -webkit-font-smoothing:antialiased;color:#2C2825;max-width:1140px;margin:0 auto;
+}
+.ca::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.3;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
+  background-size:128px 128px;
+}
+.ca>*{position:relative;z-index:1}
+@keyframes caUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.ca-anim{opacity:0;animation:caUp .6s cubic-bezier(.22,1,.36,1) forwards}
 
-const LABEL_COLORS: Record<string, { color: string; bg: string; border: string }> = {
-  LOW: { color: "#16a34a", bg: "#dcfce7", border: "#bbf7d0" },
-  MEDIUM: { color: "#d97706", bg: "#fef3c7", border: "#fde68a" },
-  HIGH: { color: "#ea580c", bg: "#ffedd5", border: "#fed7aa" },
-  VERY_HIGH: { color: "#dc2626", bg: "#fee2e2", border: "#fecaca" },
-};
+.ca-glass{
+  background:rgba(253,252,251,.7);backdrop-filter:blur(20px) saturate(1.4);
+  -webkit-backdrop-filter:blur(20px) saturate(1.4);
+  border:1px solid rgba(255,255,255,.6);border-radius:20px;
+  box-shadow:0 0 0 1px rgba(164,156,144,.06),0 1px 2px rgba(44,40,37,.04),0 4px 16px rgba(44,40,37,.04),0 12px 48px rgba(44,40,37,.06);
+  overflow:hidden;margin-bottom:16px;
+}
+.ca-glass-head{padding:18px 24px;border-bottom:1px solid rgba(164,156,144,.08);display:flex;align-items:center;gap:10px}
+.ca-glass-head-icon{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.ca-glass-title{font-size:14px;font-weight:700;color:#2C2825}
+.ca-glass-body{padding:24px}
 
-const LABEL_TEXT: Record<string, string> = {
-  LOW: "Faible", MEDIUM: "Modéré", HIGH: "Élevé", VERY_HIGH: "Très élevé",
+.ca-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.ca-metric{
+  background:rgba(253,252,251,.7);backdrop-filter:blur(16px) saturate(1.3);
+  -webkit-backdrop-filter:blur(16px) saturate(1.3);
+  border:1px solid rgba(255,255,255,.6);border-radius:18px;
+  padding:22px 24px 18px;position:relative;overflow:hidden;
+  box-shadow:0 1px 3px rgba(44,40,37,.04),0 4px 16px rgba(44,40,37,.04);
+}
+.ca-metric-accent{position:absolute;top:0;left:0;right:0;height:3px}
+.ca-metric-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#9C9488}
+.ca-metric-val{font-family:'Instrument Serif',Georgia,serif;font-size:36px;line-height:1.1;letter-spacing:-.03em;color:#2C2825;margin-top:8px}
+.ca-metric-val span{font-family:'DM Mono',monospace;font-size:14px;color:#9C9488;margin-left:4px;letter-spacing:0}
+.ca-metric-sub{font-size:11px;color:#B8B0A6;margin-top:4px}
+
+.ca-equiv{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.ca-chip{display:flex;align-items:center;gap:12px;padding:14px 16px;background:rgba(253,252,251,.5);border:1px solid rgba(255,255,255,.5);border-radius:14px;backdrop-filter:blur(8px);transition:all .2s ease}
+.ca-chip:hover{background:rgba(253,252,251,.8);transform:translateY(-1px)}
+.ca-chip-icon{font-size:20px;flex-shrink:0}
+.ca-chip-val{font-family:'DM Mono',monospace;font-size:18px;font-weight:500;color:#2C2825;letter-spacing:-.02em}
+.ca-chip-unit{font-size:11px;color:#9C9488}
+
+.ca-distro-row{margin-bottom:16px}.ca-distro-row:last-child{margin-bottom:0}
+.ca-distro-head{display:flex;justify-content:space-between;margin-bottom:6px}
+.ca-distro-label{font-size:12px;font-weight:600;color:#3D3833;display:flex;align-items:center;gap:6px}
+.ca-distro-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.ca-distro-val{font-family:'DM Mono',monospace;font-size:12px;font-weight:500}
+.ca-distro-track{width:100%;height:8px;background:rgba(164,156,144,.08);border-radius:99px;overflow:hidden}
+.ca-distro-fill{height:100%;border-radius:99px;transition:width 1s cubic-bezier(.22,1,.36,1)}
+
+.ca-tbl{width:100%;border-collapse:collapse}
+.ca-tbl thead th{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#9C9488;padding:12px 24px;text-align:left;background:rgba(74,124,89,.03);border-bottom:1px solid rgba(164,156,144,.08)}
+.ca-tbl tbody tr{transition:background .12s ease}
+.ca-tbl tbody tr:nth-child(even){background:rgba(164,156,144,.02)}
+.ca-tbl tbody tr:hover{background:rgba(74,124,89,.04)}
+.ca-tbl tbody td{padding:12px 24px;font-size:13px;color:#3D3833;border-bottom:1px solid rgba(164,156,144,.05)}
+.ca-tbl tbody tr:last-child td{border-bottom:none}
+.ca-cat-badge{display:inline-block;padding:2px 10px;border-radius:8px;font-size:11px;font-weight:500;font-family:'DM Mono',monospace;background:rgba(164,156,144,.08);color:#3D3833}
+.ca-bar-wrap{display:flex;align-items:center;justify-content:flex-end;gap:8px}
+.ca-bar-track{width:52px;height:5px;background:rgba(164,156,144,.08);border-radius:99px;overflow:hidden}
+.ca-bar-fill{height:100%;border-radius:99px;background:#4A7C59}
+
+.ca-rankings{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.ca-rank-item{display:flex;align-items:center;gap:10px;padding:10px 20px;border-bottom:1px solid rgba(164,156,144,.05);transition:background .12s ease}
+.ca-rank-item:last-child{border-bottom:none}
+.ca-rank-item:hover{background:rgba(74,124,89,.03)}
+.ca-rank-num{width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:11px;font-weight:600;flex-shrink:0;background:rgba(164,156,144,.06);color:#9C9488}
+.ca-rank-title{flex:1;font-size:13px;color:#3D3833;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ca-rank-score{font-family:'DM Mono',monospace;font-size:12px;font-weight:600;padding:3px 10px;border-radius:8px;white-space:nowrap}
+
+.ca-trend{display:flex;align-items:flex-end;gap:6px;height:130px;padding:0 4px}
+.ca-trend-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.ca-trend-val{font-family:'DM Mono',monospace;font-size:9px;color:#9C9488}
+.ca-trend-bar{width:100%;max-width:44px;border-radius:6px 6px 0 0;background:linear-gradient(180deg,#4A7C59,#6BA368);transition:height .8s cubic-bezier(.22,1,.36,1);min-height:4px}
+.ca-trend-label{font-size:10px;color:#B8B0A6}
+
+@media(max-width:1024px){.ca-metrics{grid-template-columns:repeat(2,1fr)}.ca-equiv{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:768px){.ca-rankings{grid-template-columns:1fr}.ca-equiv{grid-template-columns:1fr}}
+@media(max-width:600px){.ca-metrics{grid-template-columns:1fr}}
+.ca-metrics .ca-metric:nth-child(1){animation-delay:.03s}.ca-metrics .ca-metric:nth-child(2){animation-delay:.06s}
+.ca-metrics .ca-metric:nth-child(3){animation-delay:.09s}.ca-metrics .ca-metric:nth-child(4){animation-delay:.12s}
+`;
+
+const LABEL_COLORS: Record<string, { color: string; bg: string; dot: string }> = {
+  LOW:       { color: "#15803D", bg: "rgba(74,124,89,.1)",  dot: "#4A7C59" },
+  MEDIUM:    { color: "#A16207", bg: "rgba(217,119,6,.08)", dot: "#D97706" },
+  HIGH:      { color: "#C2410C", bg: "rgba(194,65,12,.08)", dot: "#EA580C" },
+  VERY_HIGH: { color: "#B91C1C", bg: "rgba(185,28,28,.08)", dot: "#EF4444" },
 };
+const LABEL_TEXT: Record<string, string> = { LOW: "Faible", MEDIUM: "Modéré", HIGH: "Élevé", VERY_HIGH: "Très élevé" };
 
 export default function Analytics() {
   const { analytics, comparisons, trend } = useLoaderData<typeof loader>();
@@ -122,112 +201,128 @@ export default function Analytics() {
   if (!analytics) {
     return (
       <s-page heading="Analytiques">
-        <s-section>
-          <s-paragraph>Installez d&#39;abord l&#39;app depuis le dashboard.</s-paragraph>
-        </s-section>
+        <s-section><s-paragraph>Installez d&#39;abord l&#39;app depuis le dashboard.</s-paragraph></s-section>
       </s-page>
     );
   }
 
+  const initScript = `(function(){if(document.getElementById('ca-o'))return;var s=document.createElement('style');s.id='ca-o';s.textContent='html,body,#app,[data-shopify-app-init]{background:#F5F0EB!important}.Polaris-Frame__Main,.Polaris-Frame{background:#F5F0EB!important}';document.head.appendChild(s);if(!document.getElementById('ca-f')){var l=document.createElement('link');l.id='ca-f';l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap';document.head.appendChild(l)}})()`;
+
   const netCarbon = analytics.totalCarbonKg - analytics.offsetStats.totalOffsetKg;
   const offsetPct = analytics.totalCarbonKg > 0
-    ? Math.round((analytics.offsetStats.totalOffsetKg / analytics.totalCarbonKg) * 100)
-    : 0;
+    ? Math.round((analytics.offsetStats.totalOffsetKg / analytics.totalCarbonKg) * 100) : 0;
+  const fmtKg = (v: number) => v < 1 ? v.toFixed(2) : v.toFixed(1);
 
   return (
     <s-page heading="Analytiques">
-      {/* ── Hero metrics ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 20 }}>
-        <MetricCard accent="#059669" label="Empreinte totale" value={`${analytics.totalCarbonKg.toFixed(1)} kg`} sub="CO₂ tous produits" />
-        <MetricCard accent="#0ea5e9" label="Score moyen" value={`${analytics.avgCarbonKg.toFixed(1)} kg`} sub="CO₂ par produit" />
-        <MetricCard accent="#8b5cf6" label="Compensé" value={`${analytics.offsetStats.totalOffsetKg.toFixed(1)} kg`} sub={`${offsetPct}% de l'empreinte`} />
-        <MetricCard accent={netCarbon > 0 ? "#ea580c" : "#16a34a"} label="Empreinte nette" value={`${netCarbon.toFixed(1)} kg`} sub={netCarbon <= 0 ? "Neutre carbone !" : "Restant à compenser"} />
-      </div>
+      <style dangerouslySetInnerHTML={{ __html: CSS }} />
+      <script dangerouslySetInnerHTML={{ __html: initScript }} />
 
-      {/* ── Equivalences ── */}
-      {comparisons && (
-        <div style={{ ...card, padding: 20, marginBottom: 20 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "#111827", marginBottom: 14 }}>
-            Votre empreinte équivaut à...
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 }}>
-            <ComparisonChip icon="🚗" value={comparisons.carKm} unit="km en voiture" />
-            <ComparisonChip icon="✈️" value={comparisons.flights} unit="vols Paris-Londres" />
-            <ComparisonChip icon="📺" value={comparisons.netflixHours} unit="heures de Netflix" />
-            <ComparisonChip icon="📱" value={comparisons.smartphones} unit="smartphones fabriqués" />
-            <ComparisonChip icon="👕" value={comparisons.tshirts} unit="t-shirts produits" />
-            <ComparisonChip icon="🥩" value={comparisons.beefKg} unit="kg de boeuf" />
-          </div>
+      <div className="ca">
+        {/* ── Metrics ── */}
+        <div className="ca-metrics">
+          {[
+            { accent: "#4A7C59", label: "Empreinte totale", val: fmtKg(analytics.totalCarbonKg), unit: "kgCO₂e", sub: "tous produits confondus" },
+            { accent: "#2A7A9B", label: "Score moyen", val: fmtKg(analytics.avgCarbonKg), unit: "kgCO₂e", sub: "par produit" },
+            { accent: "#6D4DB8", label: "Compensé", val: fmtKg(analytics.offsetStats.totalOffsetKg), unit: "kgCO₂e", sub: `${offsetPct}% de l'empreinte` },
+            { accent: netCarbon > 0 ? "#EA580C" : "#15803D", label: "Empreinte nette", val: fmtKg(Math.abs(netCarbon)), unit: "kgCO₂e", sub: netCarbon <= 0 ? "Neutre carbone !" : "restant à compenser" },
+          ].map((m, i) => (
+            <div className="ca-metric ca-anim" key={i} style={{ animationDelay: `${.03 + i * .04}s` }}>
+              <div className="ca-metric-accent" style={{ background: m.accent }} />
+              <div className="ca-metric-label">{m.label}</div>
+              <div className="ca-metric-val">{m.val}<span>{m.unit}</span></div>
+              <div className="ca-metric-sub">{m.sub}</div>
+            </div>
+          ))}
         </div>
-      )}
 
-      {/* ── Distribution chart (visual bars) ── */}
-      <div style={{ ...card, marginBottom: 20 }}>
-        <div style={{ padding: "16px 20px", borderBottom: "1px solid #f3f4f6" }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>Répartition des produits</div>
-        </div>
-        <div style={{ padding: 20 }}>
-          {(["LOW", "MEDIUM", "HIGH", "VERY_HIGH"] as const).map((label) => {
-            const count = analytics.distribution[label];
-            const pct = analytics.totalProducts > 0 ? (count / analytics.totalProducts) * 100 : 0;
-            const cfg = LABEL_COLORS[label];
-            return (
-              <div key={label} style={{ marginBottom: 14 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                  <span style={{ fontSize: 13, fontWeight: 500, color: "#374151" }}>{LABEL_TEXT[label]}</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: cfg.color }}>{count} ({pct.toFixed(0)}%)</span>
-                </div>
-                <div style={{ width: "100%", height: 10, backgroundColor: "#f3f4f6", borderRadius: 5, overflow: "hidden" }}>
-                  <div style={{
-                    width: `${pct}%`, height: "100%",
-                    backgroundColor: cfg.color, borderRadius: 5,
-                    transition: "width 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
-                    minWidth: count > 0 ? 4 : 0,
-                  }} />
-                </div>
+        {/* ── Equivalences ── */}
+        {comparisons && (
+          <div className="ca-glass ca-anim" style={{ animationDelay: ".1s" }}>
+            <div className="ca-glass-head">
+              <div className="ca-glass-head-icon" style={{ background: "rgba(74,124,89,.08)", color: "#4A7C59" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
               </div>
-            );
-          })}
-        </div>
-      </div>
+              <div className="ca-glass-title">Votre empreinte équivaut à…</div>
+            </div>
+            <div className="ca-glass-body">
+              <div className="ca-equiv">
+                {[
+                  { icon: "🚗", val: comparisons.carKm, unit: "km en voiture" },
+                  { icon: "✈️", val: comparisons.flights, unit: "vols Paris-Londres" },
+                  { icon: "📺", val: comparisons.netflixHours, unit: "heures de Netflix" },
+                  { icon: "📱", val: comparisons.smartphones, unit: "smartphones fabriqués" },
+                  { icon: "👕", val: comparisons.tshirts, unit: "t-shirts produits" },
+                  { icon: "🥩", val: comparisons.beefKg, unit: "kg de boeuf" },
+                ].map((c, i) => (
+                  <div className="ca-chip" key={i}>
+                    <span className="ca-chip-icon">{c.icon}</span>
+                    <div>
+                      <div className="ca-chip-val">{c.val}</div>
+                      <div className="ca-chip-unit">{c.unit}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
-      {/* ── Category breakdown ── */}
-      <div style={{ ...card, marginBottom: 20 }}>
-        <div style={{ padding: "16px 20px", borderBottom: "1px solid #f3f4f6" }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>Impact par catégorie</div>
+        {/* ── Distribution ── */}
+        <div className="ca-glass ca-anim" style={{ animationDelay: ".14s" }}>
+          <div className="ca-glass-head">
+            <div className="ca-glass-head-icon" style={{ background: "rgba(74,124,89,.08)", color: "#4A7C59" }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+            </div>
+            <div className="ca-glass-title">Répartition des produits</div>
+          </div>
+          <div className="ca-glass-body">
+            {(["LOW", "MEDIUM", "HIGH", "VERY_HIGH"] as const).map((key) => {
+              const count = analytics.distribution[key];
+              const pct = analytics.totalProducts > 0 ? (count / analytics.totalProducts) * 100 : 0;
+              const cfg = LABEL_COLORS[key];
+              return (
+                <div className="ca-distro-row" key={key}>
+                  <div className="ca-distro-head">
+                    <span className="ca-distro-label"><span className="ca-distro-dot" style={{ background: cfg.dot }} />{LABEL_TEXT[key]}</span>
+                    <span className="ca-distro-val" style={{ color: cfg.color }}>{count} ({pct.toFixed(0)}%)</span>
+                  </div>
+                  <div className="ca-distro-track">
+                    <div className="ca-distro-fill" style={{ width: `${Math.max(pct, count > 0 ? 2 : 0)}%`, background: cfg.dot }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-            <thead>
-              <tr style={{ borderBottom: "1px solid #f3f4f6" }}>
-                <th style={{ padding: "10px 20px", textAlign: "left", fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em" }}>Catégorie</th>
-                <th style={{ padding: "10px 16px", textAlign: "right", fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em" }}>CO₂ total</th>
-                <th style={{ padding: "10px 16px", textAlign: "right", fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em" }}>Produits</th>
-                <th style={{ padding: "10px 20px", textAlign: "right", fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em" }}>Part</th>
-              </tr>
-            </thead>
+
+        {/* ── Category breakdown ── */}
+        <div className="ca-glass ca-anim" style={{ animationDelay: ".18s" }}>
+          <div className="ca-glass-head">
+            <div className="ca-glass-head-icon" style={{ background: "rgba(42,122,155,.08)", color: "#2A7A9B" }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+            </div>
+            <div className="ca-glass-title">Impact par catégorie</div>
+          </div>
+          <table className="ca-tbl">
+            <thead><tr>
+              <th>Catégorie</th>
+              <th style={{ textAlign: "right" }}>CO₂ total</th>
+              <th style={{ textAlign: "right" }}>Produits</th>
+              <th style={{ textAlign: "right" }}>Part</th>
+            </tr></thead>
             <tbody>
               {analytics.categoryBreakdown.map((cat) => {
                 const pct = analytics.totalCarbonKg > 0 ? (cat.totalKg / analytics.totalCarbonKg) * 100 : 0;
                 return (
-                  <tr key={cat.code} style={{ borderBottom: "1px solid #f9fafb" }}>
-                    <td style={{ padding: "12px 20px", fontWeight: 500 }}>
-                      <span style={{
-                        display: "inline-block", padding: "2px 8px",
-                        borderRadius: 6, fontSize: 12, backgroundColor: "#f3f4f6",
-                        color: "#374151",
-                      }}>{cat.code}</span>
-                    </td>
-                    <td style={{ padding: "12px 16px", textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>
-                      {cat.totalKg.toFixed(1)} kg
-                    </td>
-                    <td style={{ padding: "12px 16px", textAlign: "right", color: "#6b7280" }}>{cat.count}</td>
-                    <td style={{ padding: "12px 20px", textAlign: "right" }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
-                        <div style={{ width: 48, height: 6, backgroundColor: "#f3f4f6", borderRadius: 3, overflow: "hidden" }}>
-                          <div style={{ width: `${pct}%`, height: "100%", backgroundColor: "#6366f1", borderRadius: 3 }} />
-                        </div>
-                        <span style={{ fontSize: 12, color: "#6b7280", fontVariantNumeric: "tabular-nums" }}>{pct.toFixed(0)}%</span>
+                  <tr key={cat.code}>
+                    <td><span className="ca-cat-badge">{cat.code}</span></td>
+                    <td style={{ textAlign: "right", fontFamily: "'DM Mono', monospace", fontWeight: 600 }}>{cat.totalKg.toFixed(1)} kgCO₂e</td>
+                    <td style={{ textAlign: "right", color: "#9C9488" }}>{cat.count}</td>
+                    <td style={{ textAlign: "right" }}>
+                      <div className="ca-bar-wrap">
+                        <div className="ca-bar-track"><div className="ca-bar-fill" style={{ width: `${pct}%` }} /></div>
+                        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: "#9C9488" }}>{pct.toFixed(0)}%</span>
                       </div>
                     </td>
                   </tr>
@@ -236,117 +331,66 @@ export default function Analytics() {
             </tbody>
           </table>
         </div>
-      </div>
 
-      {/* ── Top polluters & cleanest side by side ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
-        <ProductRanking title="Top impact" icon="🔥" products={analytics.topPolluters} />
-        <ProductRanking title="Plus vertueux" icon="🌱" products={analytics.topClean} />
-      </div>
-
-      {/* ── Monthly trend ── */}
-      {trend.length > 0 && (
-        <div style={{ ...card, marginBottom: 20 }}>
-          <div style={{ padding: "16px 20px", borderBottom: "1px solid #f3f4f6" }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>Évolution mensuelle</div>
-          </div>
-          <div style={{ padding: 20 }}>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 120 }}>
-              {trend.map((m) => {
-                const maxKg = Math.max(...trend.map((t) => t.totalCarbonKg), 1);
-                const h = (m.totalCarbonKg / maxKg) * 100;
-                return (
-                  <div key={m.month} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                    <span style={{ fontSize: 10, color: "#6b7280" }}>{m.totalCarbonKg.toFixed(0)}</span>
-                    <div style={{
-                      width: "100%", maxWidth: 40, height: `${h}%`, minHeight: 4,
-                      background: "linear-gradient(180deg, #6366f1, #818cf8)",
-                      borderRadius: "4px 4px 0 0",
-                    }} />
-                    <span style={{ fontSize: 10, color: "#9ca3af" }}>{m.month.slice(5)}</span>
-                  </div>
-                );
-              })}
+        {/* ── Rankings ── */}
+        <div className="ca-rankings">
+          {[
+            { title: "Top impact", icon: "🔥", iconBg: "rgba(234,88,12,.08)", iconColor: "#EA580C", items: analytics.topPolluters },
+            { title: "Plus vertueux", icon: "🌱", iconBg: "rgba(74,124,89,.08)", iconColor: "#4A7C59", items: analytics.topClean },
+          ].map((section) => (
+            <div className="ca-glass ca-anim" key={section.title} style={{ animationDelay: ".22s", marginBottom: 0 }}>
+              <div className="ca-glass-head">
+                <div className="ca-glass-head-icon" style={{ background: section.iconBg, color: section.iconColor }}>{section.icon}</div>
+                <div className="ca-glass-title">{section.title}</div>
+              </div>
+              <div style={{ padding: "4px 0" }}>
+                {section.items.slice(0, 5).map((p, i) => {
+                  const cfg = p.carbonLabel ? LABEL_COLORS[p.carbonLabel] : null;
+                  return (
+                    <div className="ca-rank-item" key={p.id}>
+                      <span className="ca-rank-num">{i + 1}</span>
+                      <span className="ca-rank-title">{p.title}</span>
+                      {cfg && (
+                        <span className="ca-rank-score" style={{ background: cfg.bg, color: cfg.color }}>
+                          {p.carbonScoreKg != null ? `${fmtKg(p.carbonScoreKg)} kgCO₂e` : "—"}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          ))}
         </div>
-      )}
-    </s-page>
-  );
-}
 
-// ── Sub-components ─────────────────────────────────────
-
-function MetricCard({ accent, label, value, sub }: { accent: string; label: string; value: string; sub: string }) {
-  return (
-    <div style={{ ...card, padding: "20px 20px 16px", position: "relative", overflow: "hidden" }}>
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, backgroundColor: accent }} />
-      <div style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</div>
-      <div style={{ fontSize: 28, fontWeight: 700, color: "#111827", marginTop: 4, fontVariantNumeric: "tabular-nums" }}>{value}</div>
-      <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>{sub}</div>
-    </div>
-  );
-}
-
-function ComparisonChip({ icon, value, unit }: { icon: string; value: string; unit: string }) {
-  return (
-    <div style={{
-      display: "flex", alignItems: "center", gap: 10,
-      padding: "10px 14px", borderRadius: 10,
-      backgroundColor: "#f9fafb", border: "1px solid #f3f4f6",
-    }}>
-      <span style={{ fontSize: 22 }}>{icon}</span>
-      <div>
-        <div style={{ fontSize: 16, fontWeight: 700, color: "#111827", fontVariantNumeric: "tabular-nums" }}>{value}</div>
-        <div style={{ fontSize: 11, color: "#6b7280" }}>{unit}</div>
-      </div>
-    </div>
-  );
-}
-
-function ProductRanking({ title, icon, products }: {
-  title: string; icon: string;
-  products: Array<{ id: string; title: string; carbonScoreKg: number | null; carbonLabel: string | null }>;
-}) {
-  return (
-    <div style={card}>
-      <div style={{ padding: "14px 20px", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontSize: 16 }}>{icon}</span>
-        <span style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>{title}</span>
-      </div>
-      <div style={{ padding: "4px 0" }}>
-        {products.slice(0, 5).map((p, i) => {
-          const cfg = p.carbonLabel ? LABEL_COLORS[p.carbonLabel] : null;
-          return (
-            <div key={p.id} style={{
-              display: "flex", alignItems: "center", gap: 10,
-              padding: "8px 20px", borderBottom: i < 4 ? "1px solid #fafafa" : "none",
-            }}>
-              <span style={{
-                width: 22, height: 22, borderRadius: 6,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 11, fontWeight: 700,
-                backgroundColor: "#f3f4f6", color: "#6b7280",
-              }}>
-                {i + 1}
-              </span>
-              <span style={{ flex: 1, fontSize: 13, color: "#374151", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {p.title}
-              </span>
-              {cfg && (
-                <span style={{
-                  fontSize: 12, fontWeight: 600, color: cfg.color,
-                  padding: "2px 8px", borderRadius: 6,
-                  backgroundColor: cfg.bg,
-                }}>
-                  {p.carbonScoreKg != null ? `${p.carbonScoreKg < 1 ? p.carbonScoreKg.toFixed(2) : p.carbonScoreKg.toFixed(1)} kg` : "—"}
-                </span>
-              )}
+        {/* ── Monthly trend ── */}
+        {trend.length > 0 && (
+          <div className="ca-glass ca-anim" style={{ animationDelay: ".26s" }}>
+            <div className="ca-glass-head">
+              <div className="ca-glass-head-icon" style={{ background: "rgba(74,124,89,.08)", color: "#4A7C59" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              </div>
+              <div className="ca-glass-title">Évolution mensuelle</div>
             </div>
-          );
-        })}
+            <div className="ca-glass-body">
+              <div className="ca-trend">
+                {trend.map((m) => {
+                  const maxKg = Math.max(...trend.map((t) => t.totalCarbonKg), 1);
+                  const h = (m.totalCarbonKg / maxKg) * 100;
+                  return (
+                    <div className="ca-trend-col" key={m.month}>
+                      <span className="ca-trend-val">{m.totalCarbonKg.toFixed(0)}</span>
+                      <div className="ca-trend-bar" style={{ height: `${h}%` }} />
+                      <span className="ca-trend-label">{m.month.slice(5)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+    </s-page>
   );
 }
 

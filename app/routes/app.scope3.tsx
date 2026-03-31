@@ -12,6 +12,7 @@ import {
   recordScope3,
   estimateScope3,
 } from "../lib/scope3/scope3.server";
+import { BASE_CSS, INIT_SCRIPT, COLORS } from "../lib/ui/shared-styles";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
@@ -56,64 +57,40 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   return { error: "Intent inconnue" };
 };
 
-// ── Styles ─────────────────────────────────────────────
-
-const card = {
-  background: "#fff",
-  borderRadius: 12,
-  border: "1px solid #e5e7eb",
-  overflow: "hidden" as const,
-};
+// ── Category metadata ─────────────────────────────────
 
 const SCOPE3_CATEGORIES = [
-  {
-    value: "upstream_transport",
-    label: "Transport amont",
-    icon: "T",
-    color: "#6366f1",
-    desc: "Transport des matieres premieres vers les fournisseurs",
-  },
-  {
-    value: "downstream_delivery",
-    label: "Livraison clients",
-    icon: "L",
-    color: "#0ea5e9",
-    desc: "Livraison des produits aux clients finaux",
-  },
-  {
-    value: "packaging",
-    label: "Emballage",
-    icon: "E",
-    color: "#f59e0b",
-    desc: "Fabrication et traitement des emballages",
-  },
-  {
-    value: "end_of_life",
-    label: "Fin de vie",
-    icon: "F",
-    color: "#ef4444",
-    desc: "Traitement et recyclage en fin de vie",
-  },
-  {
-    value: "energy",
-    label: "Energie",
-    icon: "N",
-    color: "#8b5cf6",
-    desc: "Consommation energetique des operations",
-  },
-  {
-    value: "other",
-    label: "Autre",
-    icon: "A",
-    color: "#6b7280",
-    desc: "Autres emissions de la chaine de valeur",
-  },
+  { value: "upstream_transport", label: "Transport amont", icon: "T", color: COLORS.green, desc: "Transport des matieres premieres vers les fournisseurs" },
+  { value: "downstream_delivery", label: "Livraison clients", icon: "L", color: COLORS.blue, desc: "Livraison des produits aux clients finaux" },
+  { value: "packaging", label: "Emballage", icon: "E", color: COLORS.amber, desc: "Fabrication et traitement des emballages" },
+  { value: "end_of_life", label: "Fin de vie", icon: "F", color: COLORS.red, desc: "Traitement et recyclage en fin de vie" },
+  { value: "energy", label: "Energie", icon: "N", color: COLORS.purple, desc: "Consommation energetique des operations" },
+  { value: "other", label: "Autre", icon: "A", color: COLORS.textMuted, desc: "Autres emissions de la chaine de valeur" },
 ];
 
 const CATEGORY_META: Record<string, { label: string; color: string; icon: string }> = {};
 for (const c of SCOPE3_CATEGORIES) {
   CATEGORY_META[c.value] = { label: c.label, color: c.color, icon: c.icon };
 }
+
+// ── Page CSS ──────────────────────────────────────────
+
+const PAGE_CSS = `
+.s3-bar-track{height:8px;border-radius:4px;overflow:hidden;background:rgba(164,156,144,.08)}
+.s3-bar-fill{height:100%;border-radius:4px;transition:width .5s ease}
+.s3-split{display:flex;height:32px;border-radius:10px;overflow:hidden;background:rgba(164,156,144,.06)}
+.s3-split-seg{display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#FDFCFB;transition:width .5s ease}
+.s3-legend{display:flex;justify-content:space-between;margin-top:8px}
+.s3-legend-item{display:flex;align-items:center;gap:6px}
+.s3-legend-dot{width:10px;height:10px;border-radius:3px}
+.s3-form-label{display:block;font-size:12px;font-weight:600;color:${COLORS.text};margin-bottom:4px}
+.s3-input,.s3-select{width:100%;padding:8px 12px;border-radius:10px;border:1px solid rgba(164,156,144,.18);font-size:13px;font-family:'DM Sans',sans-serif;background:rgba(253,252,251,.7);box-sizing:border-box;transition:border-color .2s}
+.s3-input:focus,.s3-select:focus{outline:none;border-color:rgba(74,124,89,.4)}
+.s3-cat-pill{flex:1 1 140px;padding:10px 14px;border-radius:12px;background:rgba(253,252,251,.7);border:1px solid rgba(164,156,144,.08)}
+.s3-cat-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;margin-bottom:6px}
+`;
+
+// ── Component ─────────────────────────────────────────
 
 export default function Scope3Page() {
   const { summary } = useLoaderData<typeof loader>();
@@ -122,338 +99,152 @@ export default function Scope3Page() {
 
   if (!summary) {
     return (
-      <s-page heading="Scope 3 — Supply Chain">
-        <s-section>
-          <s-paragraph>
-            Installez d&#39;abord l&#39;app depuis le dashboard.
-          </s-paragraph>
-        </s-section>
-      </s-page>
+      <div className="cq-page">
+        <style dangerouslySetInnerHTML={{ __html: BASE_CSS + PAGE_CSS }} />
+        <script dangerouslySetInnerHTML={{ __html: INIT_SCRIPT }} />
+        <div className="cq-glass cq-anim">
+          <div className="cq-empty">
+            <div className="cq-empty-icon">
+              <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" stroke={COLORS.textMuted} strokeWidth="2"/><path d="M12 8v4M12 16h.01" stroke={COLORS.textMuted} strokeWidth="2" strokeLinecap="round"/></svg>
+            </div>
+            <div className="cq-empty-t">Aucune donnee disponible</div>
+            <div className="cq-empty-d">{"Installez d'abord l'app depuis le dashboard."}</div>
+          </div>
+        </div>
+      </div>
     );
   }
 
-  const scope1Pct =
-    summary.grandTotal > 0
-      ? Math.round((summary.scope1.totalKg / summary.grandTotal) * 100)
-      : 0;
+  const scope1Pct = summary.grandTotal > 0 ? Math.round((summary.scope1.totalKg / summary.grandTotal) * 100) : 0;
   const scope3Pct = 100 - scope1Pct;
-
-  // Prepare donut data
   const categories = Object.entries(summary.scope3.categories);
   const totalScope3Kg = summary.scope3.totalKg;
 
   return (
-    <s-page heading="Scope 3 — Supply Chain">
+    <div className="cq-page">
+      <style dangerouslySetInnerHTML={{ __html: BASE_CSS + PAGE_CSS }} />
+      <script dangerouslySetInnerHTML={{ __html: INIT_SCRIPT }} />
+
       {/* ── Info banner ── */}
-      <div
-        style={{
-          ...card,
-          marginBottom: 20,
-          background: "linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%)",
-          border: "1px solid #bfdbfe",
-        }}
-      >
-        <div style={{ padding: 20 }}>
-          <div
-            style={{
-              fontSize: 15,
-              fontWeight: 700,
-              color: "#1e40af",
-              marginBottom: 8,
-            }}
-          >
-            Comprendre le Scope 3
+      <div className="cq-info cq-anim" style={{ flexDirection: "column", gap: 14 }}>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" stroke={COLORS.green} strokeWidth="2"/><path d="M12 8v4M12 16h.01" stroke={COLORS.green} strokeWidth="2" strokeLinecap="round"/></svg>
+            <span style={{ fontSize: 15, fontWeight: 700, color: COLORS.dark }}>Comprendre le Scope 3</span>
           </div>
-          <div
-            style={{ fontSize: 13, color: "#374151", lineHeight: 1.6, marginBottom: 16 }}
-          >
+          <div className="cq-info-text">
             Le Scope 3 couvre les emissions indirectes de votre chaine de valeur
             : transport des matieres premieres, livraison aux clients, emballage
-            et fin de vie des produits. Il represente souvent 70 a 90% de
-            l&#39;empreinte totale d&#39;une entreprise.
+            et fin de vie des produits. Il represente souvent <strong>70 a 90%</strong> de
+            {"l'empreinte totale d'une entreprise."}
           </div>
-          <div
-            style={{
-              display: "flex",
-              gap: 12,
-              flexWrap: "wrap",
-            }}
-          >
-            {SCOPE3_CATEGORIES.slice(0, 4).map((cat) => (
-              <div
-                key={cat.value}
-                style={{
-                  flex: "1 1 140px",
-                  padding: "10px 14px",
-                  borderRadius: 8,
-                  backgroundColor: "rgba(255,255,255,0.7)",
-                  border: `1px solid ${cat.color}30`,
-                }}
-              >
-                <div
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: 8,
-                    backgroundColor: `${cat.color}18`,
-                    color: cat.color,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 13,
-                    fontWeight: 700,
-                    marginBottom: 6,
-                  }}
-                >
-                  {cat.icon}
-                </div>
-                <div
-                  style={{ fontSize: 12, fontWeight: 600, color: "#111827" }}
-                >
-                  {cat.label}
-                </div>
-                <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>
-                  {cat.desc}
-                </div>
-              </div>
-            ))}
-          </div>
+        </div>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          {SCOPE3_CATEGORIES.slice(0, 4).map((cat) => (
+            <div key={cat.value} className="s3-cat-pill">
+              <div className="s3-cat-icon" style={{ backgroundColor: `${cat.color}18`, color: cat.color }}>{cat.icon}</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: COLORS.dark }}>{cat.label}</div>
+              <div style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 2 }}>{cat.desc}</div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* ── Summary cards ── */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: 12,
-          marginBottom: 20,
-        }}
-      >
-        <SummaryCard
-          accent="#059669"
-          label="Scope 1 — Produits"
-          value={`${summary.scope1.totalKg.toFixed(1)} kg`}
-          sub={`${scope1Pct}% de l'empreinte totale`}
-        />
-        <SummaryCard
-          accent="#6366f1"
-          label="Scope 3 — Supply Chain"
-          value={`${summary.scope3.totalKg.toFixed(1)} kg`}
-          sub={`${scope3Pct}% de l'empreinte totale`}
-        />
-        <SummaryCard
-          accent="#111827"
-          label="Empreinte totale"
-          value={`${summary.grandTotal.toFixed(1)} kg`}
-          sub="CO2 equivalent"
-        />
+      {/* ── Summary metrics ── */}
+      <div className="cq-metrics cq-stagger">
+        <div className="cq-metric cq-anim">
+          <div className="cq-metric-accent" style={{ background: COLORS.green }} />
+          <div className="cq-metric-label">Scope 1 — Produits</div>
+          <div className="cq-metric-val"><span className="cq-mono">{summary.scope1.totalKg.toFixed(1)}</span> <span>kgCO&#8322;e</span></div>
+          <div className="cq-metric-sub">{scope1Pct}% de {"l'empreinte totale"}</div>
+        </div>
+        <div className="cq-metric cq-anim">
+          <div className="cq-metric-accent" style={{ background: COLORS.dark }} />
+          <div className="cq-metric-label">Scope 3 — Supply Chain</div>
+          <div className="cq-metric-val"><span className="cq-mono">{summary.scope3.totalKg.toFixed(1)}</span> <span>kgCO&#8322;e</span></div>
+          <div className="cq-metric-sub">{scope3Pct}% de {"l'empreinte totale"}</div>
+        </div>
+        <div className="cq-metric cq-anim">
+          <div className="cq-metric-accent" style={{ background: COLORS.amber }} />
+          <div className="cq-metric-label">Empreinte totale</div>
+          <div className="cq-metric-val"><span className="cq-mono">{summary.grandTotal.toFixed(1)}</span> <span>kgCO&#8322;e</span></div>
+          <div className="cq-metric-sub">CO&#8322; equivalent</div>
+        </div>
       </div>
 
       {/* ── Scope split visual ── */}
-      <div style={{ ...card, padding: 20, marginBottom: 20 }}>
-        <div
-          style={{
-            fontSize: 14,
-            fontWeight: 600,
-            color: "#111827",
-            marginBottom: 14,
-          }}
-        >
-          Repartition Scope 1 vs Scope 3
+      <div className="cq-glass cq-anim" style={{ animationDelay: ".12s" }}>
+        <div className="cq-glass-head">
+          <div className="cq-glass-icon" style={{ background: COLORS.greenLight }}>
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke={COLORS.green} strokeWidth="2"/><path d="M12 2a10 10 0 010 20" fill={COLORS.green} opacity=".15"/></svg>
+          </div>
+          <div className="cq-glass-title">Repartition Scope 1 vs Scope 3</div>
         </div>
-        <div
-          style={{
-            display: "flex",
-            height: 32,
-            borderRadius: 8,
-            overflow: "hidden",
-            backgroundColor: "#f3f4f6",
-          }}
-        >
-          <div
-            style={{
-              width: `${scope1Pct}%`,
-              backgroundColor: "#059669",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 12,
-              fontWeight: 600,
-              color: "#fff",
-              minWidth: scope1Pct > 0 ? 40 : 0,
-              transition: "width 0.5s ease",
-            }}
-          >
-            {scope1Pct > 10 ? `${scope1Pct}%` : ""}
+        <div className="cq-glass-body">
+          <div className="s3-split">
+            <div className="s3-split-seg" style={{ width: `${scope1Pct}%`, backgroundColor: COLORS.green, minWidth: scope1Pct > 0 ? 40 : 0 }}>
+              {scope1Pct > 10 ? `${scope1Pct}%` : ""}
+            </div>
+            <div className="s3-split-seg" style={{ width: `${scope3Pct}%`, backgroundColor: COLORS.dark, minWidth: scope3Pct > 0 ? 40 : 0 }}>
+              {scope3Pct > 10 ? `${scope3Pct}%` : ""}
+            </div>
           </div>
-          <div
-            style={{
-              width: `${scope3Pct}%`,
-              backgroundColor: "#6366f1",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 12,
-              fontWeight: 600,
-              color: "#fff",
-              minWidth: scope3Pct > 0 ? 40 : 0,
-              transition: "width 0.5s ease",
-            }}
-          >
-            {scope3Pct > 10 ? `${scope3Pct}%` : ""}
-          </div>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            marginTop: 8,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <div
-              style={{
-                width: 10,
-                height: 10,
-                borderRadius: 3,
-                backgroundColor: "#059669",
-              }}
-            />
-            <span style={{ fontSize: 12, color: "#6b7280" }}>
-              Produits ({summary.scope1.totalKg.toFixed(1)} kg)
-            </span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <div
-              style={{
-                width: 10,
-                height: 10,
-                borderRadius: 3,
-                backgroundColor: "#6366f1",
-              }}
-            />
-            <span style={{ fontSize: 12, color: "#6b7280" }}>
-              Supply Chain ({summary.scope3.totalKg.toFixed(1)} kg)
-            </span>
+          <div className="s3-legend">
+            <div className="s3-legend-item">
+              <div className="s3-legend-dot" style={{ backgroundColor: COLORS.green }} />
+              <span style={{ fontSize: 12, color: COLORS.textMuted }}>Produits (<span className="cq-mono">{summary.scope1.totalKg.toFixed(1)}</span> kgCO&#8322;e)</span>
+            </div>
+            <div className="s3-legend-item">
+              <div className="s3-legend-dot" style={{ backgroundColor: COLORS.dark }} />
+              <span style={{ fontSize: 12, color: COLORS.textMuted }}>Supply Chain (<span className="cq-mono">{summary.scope3.totalKg.toFixed(1)}</span> kgCO&#8322;e)</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ── Scope 3 breakdown by category (horizontal bars) ── */}
-      <div style={{ ...card, marginBottom: 20 }}>
-        <div
-          style={{
-            padding: "16px 20px",
-            borderBottom: "1px solid #f3f4f6",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <div style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>
-            Detail Scope 3 par categorie
+      {/* ── Scope 3 breakdown by category ── */}
+      <div className="cq-glass cq-anim" style={{ animationDelay: ".18s" }}>
+        <div className="cq-glass-head">
+          <div className="cq-glass-icon" style={{ background: COLORS.greenLight }}>
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h6" stroke={COLORS.green} strokeWidth="2" strokeLinecap="round"/></svg>
           </div>
+          <div className="cq-glass-title">Detail Scope 3 par categorie</div>
         </div>
-        <div style={{ padding: 20 }}>
+        <div className="cq-glass-body">
           {categories.length === 0 && (
-            <div
-              style={{
-                textAlign: "center",
-                padding: 24,
-                color: "#9ca3af",
-                fontSize: 13,
-              }}
-            >
-              Aucune donnee Scope 3. Lancez une estimation automatique ou
-              ajoutez une entree manuellement.
+            <div className="cq-empty">
+              <div className="cq-empty-icon">
+                <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h6" stroke={COLORS.textMuted} strokeWidth="2" strokeLinecap="round"/></svg>
+              </div>
+              <div className="cq-empty-t">Aucune donnee Scope 3</div>
+              <div className="cq-empty-d">Lancez une estimation automatique ou ajoutez une entree manuellement.</div>
             </div>
           )}
           {categories.map(([cat, data]) => {
-            const pct =
-              totalScope3Kg > 0
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                ? ((data as any).totalKg / totalScope3Kg) * 100
-                : 0;
-            const meta = CATEGORY_META[cat] ?? {
-              label: cat,
-              color: "#6b7280",
-              icon: "?",
-            };
+            const pct = totalScope3Kg > 0
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              ? ((data as any).totalKg / totalScope3Kg) * 100
+              : 0;
+            const meta = CATEGORY_META[cat] ?? { label: cat, color: COLORS.textMuted, icon: "?" };
             return (
               <div key={cat} style={{ marginBottom: 16 }}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: 6,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: 6,
-                        backgroundColor: `${meta.color}18`,
-                        color: meta.color,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 11,
-                        fontWeight: 700,
-                      }}
-                    >
-                      {meta.icon}
-                    </div>
-                    <span
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 500,
-                        color: "#374151",
-                      }}
-                    >
-                      {meta.label}
-                    </span>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div className="s3-cat-icon" style={{ width: 24, height: 24, fontSize: 11, backgroundColor: `${meta.color}18`, color: meta.color }}>{meta.icon}</div>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: COLORS.text }}>{meta.label}</span>
                   </div>
-                  <span
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: meta.color,
-                    }}
-                  >
+                  <span className="cq-mono" style={{ fontSize: 13, fontWeight: 600, color: meta.color }}>
                     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    {(data as any).totalKg.toFixed(1)} kg ({pct.toFixed(0)}%)
+                    {(data as any).totalKg.toFixed(1)} kgCO&#8322;e ({pct.toFixed(0)}%)
                   </span>
                 </div>
-                <div
-                  style={{
-                    width: "100%",
-                    height: 8,
-                    backgroundColor: "#f3f4f6",
-                    borderRadius: 4,
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: `${pct}%`,
-                      height: "100%",
-                      backgroundColor: meta.color,
-                      borderRadius: 4,
-                      transition: "width 0.5s ease",
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      minWidth: (data as any).totalKg > 0 ? 4 : 0,
-                    }}
-                  />
+                <div className="s3-bar-track">
+                  <div className="s3-bar-fill" style={{
+                    width: `${pct}%`,
+                    backgroundColor: meta.color,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    minWidth: (data as any).totalKg > 0 ? 4 : 0,
+                  }} />
                 </div>
               </div>
             );
@@ -461,399 +252,123 @@ export default function Scope3Page() {
         </div>
       </div>
 
-      {/* ── Auto-estimate button ── */}
-      <div style={{ ...card, padding: 20, marginBottom: 20 }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: 12,
-          }}
-        >
-          <div>
-            <div
-              style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}
-            >
-              Estimation automatique
+      {/* ── Auto-estimate ── */}
+      <div className="cq-glass cq-anim" style={{ animationDelay: ".24s" }}>
+        <div className="cq-glass-body">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: COLORS.dark }}>Estimation automatique</div>
+              <div style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 2 }}>
+                Estimez les emissions Scope 3 a partir de vos donnees produit. Les anciennes estimations du mois en cours seront remplacees.
+              </div>
             </div>
-            <div
-              style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}
-            >
-              Estimez les emissions Scope 3 a partir de vos donnees produit. Les anciennes estimations du mois en cours seront remplacees.
-            </div>
+            <fetcher.Form method="post">
+              <input type="hidden" name="intent" value="estimate" />
+              <button type="submit" disabled={isSubmitting} className="cq-btn cq-btn-green">
+                {isSubmitting ? "Estimation en cours..." : "Estimer automatiquement"}
+              </button>
+            </fetcher.Form>
           </div>
-          <fetcher.Form method="post">
-            <input type="hidden" name="intent" value="estimate" />
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              style={{
-                padding: "10px 20px",
-                borderRadius: 8,
-                border: "none",
-                backgroundColor: "#6366f1",
-                color: "#fff",
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: isSubmitting ? "not-allowed" : "pointer",
-                opacity: isSubmitting ? 0.6 : 1,
-              }}
-            >
-              {isSubmitting ? "Estimation en cours..." : "Estimer automatiquement"}
-            </button>
-          </fetcher.Form>
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          {fetcher.data && (fetcher.data as any).success && (fetcher.data as any).totalKg !== undefined && (
+            <div className="cq-info" style={{ marginTop: 12, marginBottom: 0 }}>
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a10 10 0 11-20 0 10 10 0 0120 0z" stroke={COLORS.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <span className="cq-info-text">
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                Estimation terminee : <strong className="cq-mono">{(fetcher.data as any).totalKg} kgCO&#8322;e</strong> estimes pour le Scope 3.
+              </span>
+            </div>
+          )}
         </div>
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        {fetcher.data && (fetcher.data as any).success && (fetcher.data as any).totalKg !== undefined && (
-          <div
-            style={{
-              marginTop: 12,
-              padding: "10px 14px",
-              borderRadius: 8,
-              backgroundColor: "#dcfce7",
-              border: "1px solid #bbf7d0",
-              fontSize: 13,
-              color: "#16a34a",
-              fontWeight: 500,
-            }}
-          >
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            Estimation terminee : {(fetcher.data as any).totalKg} kg CO2 estimes pour le Scope 3.
-          </div>
-        )}
       </div>
 
       {/* ── Manual entry form ── */}
-      <div style={{ ...card, marginBottom: 20 }}>
-        <div
-          style={{
-            padding: "16px 20px",
-            borderBottom: "1px solid #f3f4f6",
-          }}
-        >
-          <div style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>
-            Ajouter une entree manuellement
+      <div className="cq-glass cq-anim" style={{ animationDelay: ".3s" }}>
+        <div className="cq-glass-head">
+          <div className="cq-glass-icon" style={{ background: COLORS.greenLight }}>
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke={COLORS.green} strokeWidth="2" strokeLinecap="round"/></svg>
           </div>
+          <div className="cq-glass-title">Ajouter une entree manuellement</div>
         </div>
-        <div style={{ padding: 20 }}>
+        <div className="cq-glass-body">
           <fetcher.Form method="post">
             <input type="hidden" name="intent" value="add-entry" />
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr 1fr",
-                gap: 12,
-                marginBottom: 14,
-              }}
-            >
+            <div className="cq-grid-3" style={{ marginBottom: 14 }}>
               <div>
-                <label
-                  htmlFor="scope3-category"
-                  style={{
-                    display: "block",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: "#374151",
-                    marginBottom: 4,
-                  }}
-                >
-                  Categorie
-                </label>
-                <select
-                  id="scope3-category"
-                  name="category"
-                  required
-                  style={{
-                    width: "100%",
-                    padding: "8px 10px",
-                    borderRadius: 8,
-                    border: "1px solid #d1d5db",
-                    fontSize: 13,
-                    backgroundColor: "#fff",
-                  }}
-                >
+                <label htmlFor="scope3-category" className="s3-form-label">Categorie</label>
+                <select id="scope3-category" name="category" required className="s3-select">
                   {SCOPE3_CATEGORIES.map((c) => (
-                    <option key={c.value} value={c.value}>
-                      {c.label}
-                    </option>
+                    <option key={c.value} value={c.value}>{c.label}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label
-                  htmlFor="scope3-emissionKg"
-                  style={{
-                    display: "block",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: "#374151",
-                    marginBottom: 4,
-                  }}
-                >
-                  Emission (kg CO2)
-                </label>
-                <input
-                  id="scope3-emissionKg"
-                  type="number"
-                  name="emissionKg"
-                  step="0.01"
-                  min="0"
-                  required
-                  placeholder="0.00"
-                  style={{
-                    width: "100%",
-                    padding: "8px 10px",
-                    borderRadius: 8,
-                    border: "1px solid #d1d5db",
-                    fontSize: 13,
-                    boxSizing: "border-box",
-                  }}
-                />
+                <label htmlFor="scope3-emissionKg" className="s3-form-label">Emission (kgCO&#8322;e)</label>
+                <input id="scope3-emissionKg" type="number" name="emissionKg" step="0.01" min="0" required placeholder="0.00" className="s3-input" />
               </div>
               <div>
-                <label
-                  htmlFor="scope3-source"
-                  style={{
-                    display: "block",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: "#374151",
-                    marginBottom: 4,
-                  }}
-                >
-                  Source / Description
-                </label>
-                <input
-                  id="scope3-source"
-                  type="text"
-                  name="source"
-                  required
-                  placeholder="ex: Facture DHL mars 2026"
-                  style={{
-                    width: "100%",
-                    padding: "8px 10px",
-                    borderRadius: 8,
-                    border: "1px solid #d1d5db",
-                    fontSize: 13,
-                    boxSizing: "border-box",
-                  }}
-                />
+                <label htmlFor="scope3-source" className="s3-form-label">Source / Description</label>
+                <input id="scope3-source" type="text" name="source" required placeholder="ex: Facture DHL mars 2026" className="s3-input" />
               </div>
             </div>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              style={{
-                padding: "8px 18px",
-                borderRadius: 8,
-                border: "1px solid #d1d5db",
-                backgroundColor: "#fff",
-                color: "#374151",
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: isSubmitting ? "not-allowed" : "pointer",
-              }}
-            >
-              Ajouter
-            </button>
+            <button type="submit" disabled={isSubmitting} className="cq-btn cq-btn-ghost">Ajouter</button>
           </fetcher.Form>
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           {fetcher.data && (fetcher.data as any).error && (
-            <div
-              style={{
-                marginTop: 10,
-                padding: "8px 12px",
-                borderRadius: 8,
-                backgroundColor: "#fee2e2",
-                border: "1px solid #fecaca",
-                fontSize: 12,
-                color: "#dc2626",
-              }}
-            >
+            <div className="cq-warn" style={{ marginTop: 10, marginBottom: 0 }}>
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke={COLORS.amber} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {(fetcher.data as any).error}
+              <span style={{ fontSize: 12.5, color: COLORS.red }}>{(fetcher.data as any).error}</span>
             </div>
           )}
         </div>
       </div>
 
       {/* ── History table ── */}
-      <div style={{ ...card, marginBottom: 20 }}>
-        <div
-          style={{
-            padding: "16px 20px",
-            borderBottom: "1px solid #f3f4f6",
-          }}
-        >
-          <div style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>
-            Historique des entrees Scope 3
+      <div className="cq-glass cq-anim" style={{ animationDelay: ".36s" }}>
+        <div className="cq-glass-head">
+          <div className="cq-glass-icon" style={{ background: COLORS.greenLight }}>
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke={COLORS.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </div>
+          <div className="cq-glass-title">Historique des entrees Scope 3</div>
         </div>
         <div style={{ overflowX: "auto" }}>
           {summary.entries.length === 0 ? (
-            <div
-              style={{
-                padding: 24,
-                textAlign: "center",
-                color: "#9ca3af",
-                fontSize: 13,
-              }}
-            >
-              Aucune entree enregistree
+            <div className="cq-empty">
+              <div className="cq-empty-icon">
+                <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke={COLORS.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+              <div className="cq-empty-t">Aucune entree enregistree</div>
+              <div className="cq-empty-d">Ajoutez des entrees manuellement ou lancez une estimation automatique.</div>
             </div>
           ) : (
-            <table
-              style={{
-                width: "100%",
-                borderCollapse: "collapse",
-                fontSize: 13,
-              }}
-            >
+            <table className="cq-tbl">
               <thead>
-                <tr style={{ borderBottom: "1px solid #f3f4f6" }}>
-                  <th
-                    style={{
-                      padding: "10px 20px",
-                      textAlign: "left",
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: "#9ca3af",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                    }}
-                  >
-                    Categorie
-                  </th>
-                  <th
-                    style={{
-                      padding: "10px 16px",
-                      textAlign: "right",
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: "#9ca3af",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                    }}
-                  >
-                    Emission
-                  </th>
-                  <th
-                    style={{
-                      padding: "10px 16px",
-                      textAlign: "left",
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: "#9ca3af",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                    }}
-                  >
-                    Source
-                  </th>
-                  <th
-                    style={{
-                      padding: "10px 16px",
-                      textAlign: "left",
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: "#9ca3af",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                    }}
-                  >
-                    Periode
-                  </th>
-                  <th
-                    style={{
-                      padding: "10px 20px",
-                      textAlign: "left",
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: "#9ca3af",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                    }}
-                  >
-                    Date
-                  </th>
+                <tr>
+                  <th>Categorie</th>
+                  <th style={{ textAlign: "right" }}>Emission</th>
+                  <th>Source</th>
+                  <th>Periode</th>
+                  <th>Date</th>
                 </tr>
               </thead>
               <tbody>
                 {summary.entries.map((entry) => {
-                  const meta = CATEGORY_META[entry.category] ?? {
-                    label: entry.category,
-                    color: "#6b7280",
-                    icon: "?",
-                  };
+                  const meta = CATEGORY_META[entry.category] ?? { label: entry.category, color: COLORS.textMuted, icon: "?" };
                   return (
-                    <tr
-                      key={entry.id}
-                      style={{ borderBottom: "1px solid #f9fafb" }}
-                    >
-                      <td style={{ padding: "10px 20px" }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 8,
-                          }}
-                        >
-                          <div
-                            style={{
-                              width: 22,
-                              height: 22,
-                              borderRadius: 6,
-                              backgroundColor: `${meta.color}18`,
-                              color: meta.color,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: 10,
-                              fontWeight: 700,
-                            }}
-                          >
-                            {meta.icon}
-                          </div>
-                          <span style={{ fontWeight: 500 }}>
-                            {meta.label}
-                          </span>
+                    <tr key={entry.id}>
+                      <td>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <div className="s3-cat-icon" style={{ width: 22, height: 22, fontSize: 10, backgroundColor: `${meta.color}18`, color: meta.color }}>{meta.icon}</div>
+                          <span style={{ fontWeight: 500 }}>{meta.label}</span>
                         </div>
                       </td>
-                      <td
-                        style={{
-                          padding: "10px 16px",
-                          textAlign: "right",
-                          fontWeight: 600,
-                          fontVariantNumeric: "tabular-nums",
-                        }}
-                      >
-                        {entry.emissionKg.toFixed(2)} kg
+                      <td style={{ textAlign: "right" }}>
+                        <span className="cq-mono" style={{ fontWeight: 600 }}>{entry.emissionKg.toFixed(2)} kgCO&#8322;e</span>
                       </td>
-                      <td
-                        style={{
-                          padding: "10px 16px",
-                          color: "#6b7280",
-                        }}
-                      >
-                        {entry.source}
-                      </td>
-                      <td
-                        style={{
-                          padding: "10px 16px",
-                          color: "#6b7280",
-                        }}
-                      >
-                        {entry.period}
-                      </td>
-                      <td
-                        style={{
-                          padding: "10px 20px",
-                          color: "#9ca3af",
-                          fontSize: 12,
-                        }}
-                      >
+                      <td style={{ color: COLORS.textMuted }}>{entry.source}</td>
+                      <td style={{ color: COLORS.textMuted }}>{entry.period}</td>
+                      <td style={{ color: COLORS.textFaint, fontSize: 12 }}>
                         {new Date(entry.createdAt).toLocaleDateString("fr-FR")}
                       </td>
                     </tr>
@@ -865,109 +380,32 @@ export default function Scope3Page() {
         </div>
       </div>
 
-      {/* ── Comparison insight ── */}
-      <div
-        style={{
-          ...card,
-          padding: 20,
-          background: "linear-gradient(135deg, #faf5ff 0%, #eff6ff 100%)",
-          border: "1px solid #e9d5ff",
-          marginBottom: 20,
-        }}
-      >
-        <div
-          style={{ fontSize: 14, fontWeight: 600, color: "#7c3aed", marginBottom: 8 }}
-        >
-          Analyse
-        </div>
-        <div style={{ fontSize: 14, color: "#374151", lineHeight: 1.6 }}>
+      {/* ── Analysis insight ── */}
+      <div className="cq-info cq-anim" style={{ animationDelay: ".42s" }}>
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l.146.146A3 3 0 0118 21H6a3 3 0 01-2.682-4.658l.146-.146z" stroke={COLORS.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        <div className="cq-info-text">
+          <strong>Analyse :</strong>{" "}
           Vos produits representent{" "}
-          <strong style={{ color: "#059669" }}>{scope1Pct}%</strong> de votre
+          <strong className="cq-mono" style={{ color: COLORS.green }}>{scope1Pct}%</strong> de votre
           empreinte totale. La supply chain represente{" "}
-          <strong style={{ color: "#6366f1" }}>{scope3Pct}%</strong>.
+          <strong className="cq-mono" style={{ color: COLORS.dark }}>{scope3Pct}%</strong>.
           {scope3Pct > 50 && (
             <span>
-              {" "}
-              Concentrez vos efforts sur la chaine d&#39;approvisionnement pour un
-              impact maximal.
+              {" Concentrez vos efforts sur la chaine d'approvisionnement pour un impact maximal."}
             </span>
           )}
           {scope3Pct <= 50 && scope3Pct > 0 && (
             <span>
-              {" "}
-              Votre empreinte produit est dominante : optimisez le choix des
-              materiaux et fournisseurs.
+              {" "}Votre empreinte produit est dominante : optimisez le choix des materiaux et fournisseurs.
             </span>
           )}
           {summary.grandTotal === 0 && (
             <span>
-              {" "}
-              Lancez une estimation automatique pour commencer votre bilan.
+              {" "}Lancez une estimation automatique pour commencer votre bilan.
             </span>
           )}
         </div>
       </div>
-    </s-page>
-  );
-}
-
-// ── Sub-components ─────────────────────────────────────
-
-function SummaryCard({
-  accent,
-  label,
-  value,
-  sub,
-}: {
-  accent: string;
-  label: string;
-  value: string;
-  sub: string;
-}) {
-  return (
-    <div
-      style={{
-        background: "#fff",
-        borderRadius: 12,
-        border: "1px solid #e5e7eb",
-        padding: "20px 20px 16px",
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 3,
-          backgroundColor: accent,
-        }}
-      />
-      <div
-        style={{
-          fontSize: 11,
-          fontWeight: 600,
-          color: "#9ca3af",
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
-        }}
-      >
-        {label}
-      </div>
-      <div
-        style={{
-          fontSize: 28,
-          fontWeight: 700,
-          color: "#111827",
-          marginTop: 4,
-          fontVariantNumeric: "tabular-nums",
-        }}
-      >
-        {value}
-      </div>
-      <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>{sub}</div>
     </div>
   );
 }

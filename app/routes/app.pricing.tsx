@@ -81,16 +81,158 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 const TIER_LEVEL: Record<string, number> = { FREE: 0, STARTER: 1, GROWTH: 2, PRO: 3, SCALE: 4 };
 
+const CSS = `
+.cp *{box-sizing:border-box;margin:0;padding:0}
+.cp{
+  font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+  -webkit-font-smoothing:antialiased;color:#2C2825;
+  max-width:1200px;margin:0 auto;
+}
+.cp::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.3;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
+  background-size:128px 128px;
+}
+.cp>*{position:relative;z-index:1}
+
+@keyframes cpUp{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.cp-anim{opacity:0;animation:cpUp .6s cubic-bezier(.22,1,.36,1) forwards}
+
+/* Current plan banner */
+.cp-current{
+  background:rgba(253,252,251,.7);backdrop-filter:blur(20px) saturate(1.4);
+  -webkit-backdrop-filter:blur(20px) saturate(1.4);
+  border:1px solid rgba(255,255,255,.6);border-radius:16px;
+  padding:18px 28px;margin-bottom:20px;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 1px 3px rgba(44,40,37,.04),0 4px 16px rgba(44,40,37,.04);
+}
+.cp-current-plan{font-family:'Instrument Serif',Georgia,serif;font-size:22px;color:#2C2825;letter-spacing:-.02em}
+.cp-current-badge{
+  font-family:'DM Mono',monospace;font-size:11px;font-weight:600;
+  padding:4px 12px;border-radius:99px;display:inline-flex;align-items:center;gap:5px;
+}
+
+/* Plans grid */
+.cp-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px}
+
+/* Plan card */
+.cp-card{
+  background:rgba(253,252,251,.65);backdrop-filter:blur(16px) saturate(1.3);
+  -webkit-backdrop-filter:blur(16px) saturate(1.3);
+  border:1px solid rgba(255,255,255,.5);border-radius:20px;
+  padding:28px 22px 24px;position:relative;
+  display:flex;flex-direction:column;
+  transition:all .3s cubic-bezier(.22,1,.36,1);
+  box-shadow:0 0 0 1px rgba(164,156,144,.05),0 1px 3px rgba(44,40,37,.04),0 4px 16px rgba(44,40,37,.04);
+}
+.cp-card:hover{
+  transform:translateY(-4px);
+  box-shadow:0 0 0 1px rgba(74,124,89,.08),0 4px 12px rgba(44,40,37,.06),0 16px 48px rgba(44,40,37,.08);
+}
+
+/* Recommended */
+.cp-card--rec{
+  border:2px solid rgba(74,124,89,.4);
+  box-shadow:0 0 0 4px rgba(74,124,89,.06),0 4px 16px rgba(44,40,37,.06),0 16px 48px rgba(44,40,37,.08);
+  background:rgba(253,252,251,.8);
+}
+.cp-card--rec:hover{border-color:#4A7C59}
+
+/* Current */
+.cp-card--cur{border:2px solid #2C2825;background:rgba(253,252,251,.85)}
+
+/* Badge */
+.cp-badge{
+  position:absolute;top:-11px;left:50%;transform:translateX(-50%);
+  font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  padding:4px 14px;border-radius:99px;white-space:nowrap;
+}
+
+/* Plan name */
+.cp-name{font-size:17px;font-weight:700;color:#2C2825;margin-bottom:6px}
+
+/* Price */
+.cp-price{display:flex;align-items:baseline;gap:4px;margin-bottom:4px}
+.cp-price-num{font-family:'Instrument Serif',Georgia,serif;font-size:40px;font-weight:400;color:#2C2825;letter-spacing:-.04em;line-height:1.1}
+.cp-price-per{font-size:12px;color:#9C9488}
+
+/* Description */
+.cp-desc{font-size:12px;color:#9C9488;margin-bottom:18px;line-height:1.4}
+
+/* Features */
+.cp-features{list-style:none;padding:0;margin:0 0 20px;flex:1}
+.cp-features li{
+  font-size:12px;color:#3D3833;padding:4px 0;
+  display:flex;align-items:flex-start;gap:7px;line-height:1.4;
+}
+.cp-features li::before{
+  content:'';width:14px;height:14px;flex-shrink:0;margin-top:1px;
+  background:rgba(74,124,89,.1);border-radius:50%;
+  background-image:url("data:image/svg+xml,%3Csvg width='8' height='6' viewBox='0 0 8 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 3L3 5L7 1' stroke='%234A7C59' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:center;
+}
+
+/* Button */
+.cp-btn{
+  width:100%;padding:11px;border-radius:12px;font-size:13px;font-weight:600;
+  cursor:pointer;border:none;font-family:'DM Sans',sans-serif;
+  transition:all .2s cubic-bezier(.22,1,.36,1);
+}
+.cp-btn--brand{
+  background:#4A7C59;color:#fff;
+  box-shadow:0 2px 8px rgba(74,124,89,.25);
+}
+.cp-btn--brand:hover{background:#3A6E24;transform:translateY(-1px);box-shadow:0 4px 16px rgba(74,124,89,.3)}
+.cp-btn--dark{
+  background:#2C2825;color:#FDFCFB;
+  box-shadow:0 2px 8px rgba(44,40,37,.15);
+}
+.cp-btn--dark:hover{background:#1E1B18;transform:translateY(-1px);box-shadow:0 4px 16px rgba(44,40,37,.2)}
+.cp-btn--ghost{
+  background:transparent;color:#9C9488;
+  border:1px solid rgba(164,156,144,.2);
+}
+.cp-btn--ghost:hover{background:rgba(164,156,144,.06);color:#2C2825;border-color:rgba(164,156,144,.3)}
+.cp-btn--cur{background:#2C2825;color:#FDFCFB;cursor:default;opacity:.7}
+.cp-btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
+
+/* Limits */
+.cp-limits{font-family:'DM Mono',monospace;font-size:10px;color:#B8B0A6;text-align:center;margin-top:8px}
+
+/* FAQ */
+.cp-faq{
+  background:rgba(253,252,251,.65);backdrop-filter:blur(16px) saturate(1.3);
+  -webkit-backdrop-filter:blur(16px) saturate(1.3);
+  border:1px solid rgba(255,255,255,.5);border-radius:20px;padding:28px;
+  box-shadow:0 1px 3px rgba(44,40,37,.04),0 4px 16px rgba(44,40,37,.04);
+}
+.cp-faq-title{font-size:15px;font-weight:700;color:#2C2825;margin-bottom:18px}
+.cp-faq-item{padding:14px 0;border-bottom:1px solid rgba(164,156,144,.08)}
+.cp-faq-item:last-child{border-bottom:none;padding-bottom:0}
+.cp-faq-q{font-size:13px;font-weight:600;color:#2C2825;margin-bottom:4px}
+.cp-faq-a{font-size:12.5px;color:#7A746C;line-height:1.5}
+
+/* Stagger */
+.cp-grid .cp-card:nth-child(1){animation-delay:.03s}
+.cp-grid .cp-card:nth-child(2){animation-delay:.06s}
+.cp-grid .cp-card:nth-child(3){animation-delay:.09s}
+.cp-grid .cp-card:nth-child(4){animation-delay:.12s}
+.cp-grid .cp-card:nth-child(5){animation-delay:.15s}
+
+@media(max-width:1200px){.cp-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:768px){.cp-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.cp-grid{grid-template-columns:1fr}}
+`;
+
 export default function Pricing() {
   const { currentTier } = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
   const shopify = useAppBridge();
   const isChanging = fetcher.state !== "idle";
 
-  // Handle redirect to Shopify confirmation page
   useEffect(() => {
     if (fetcher.data && "confirmationUrl" in fetcher.data) {
-      // Redirect to Shopify's billing approval page
       open(fetcher.data.confirmationUrl as string, "_top");
     }
     if (fetcher.data && "success" in fetcher.data) {
@@ -101,6 +243,21 @@ export default function Pricing() {
     }
   }, [fetcher.data, shopify]);
 
+  // Polaris overrides + fonts
+  useEffect(() => {
+    if (document.getElementById("cp-override")) return;
+    const s = document.createElement("style");
+    s.id = "cp-override";
+    s.textContent = "html,body,#app,[data-shopify-app-init]{background:#F5F0EB!important}.Polaris-Frame__Main,.Polaris-Frame{background:#F5F0EB!important}";
+    document.head.appendChild(s);
+    if (!document.getElementById("cp-fonts")) {
+      const l = document.createElement("link"); l.id = "cp-fonts"; l.rel = "stylesheet";
+      l.href = "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap";
+      document.head.appendChild(l);
+    }
+    return () => { document.getElementById("cp-override")?.remove(); };
+  }, []);
+
   const handleSelect = (tier: PlanTier) => {
     if (tier === currentTier) return;
     if (tier === "FREE") {
@@ -110,127 +267,94 @@ export default function Pricing() {
     }
   };
 
+  const tierName = (t: string) => t === "FREE" ? "Free" : t === "STARTER" ? "Starter" : t === "GROWTH" ? "Growth" : t === "PRO" ? "Pro" : "Scale";
+
   return (
     <s-page heading="Choisir votre plan">
-      <style dangerouslySetInnerHTML={{ __html: `
-        .cq-pricing-wrap{width:100%;max-width:100%;margin:0 auto}
-        .cq-pricing{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px}
-        .cq-plan{background:#fdfcfb;border-radius:18px;border:1px solid rgba(164,156,144,.18);padding:28px 24px;position:relative;transition:all .2s ease;display:flex;flex-direction:column}
-        .cq-plan:hover{box-shadow:0 8px 32px rgba(26,22,18,.1);transform:translateY(-2px)}
-        .cq-plan-rec{border:2px solid #4a8a32;box-shadow:0 0 0 4px rgba(74,138,50,.1)}
-        .cq-plan-current{border:2px solid #6366f1;background:#faf5ff}
-        .cq-plan-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:600;padding:4px 14px;border-radius:999px;white-space:nowrap}
-        .cq-plan-name{font-size:18px;font-weight:700;color:#1a1612;margin-bottom:4px}
-        .cq-plan-price{display:flex;align-items:baseline;gap:4px;margin-bottom:4px}
-        .cq-plan-price-num{font-family:'Instrument Serif',Georgia,serif;font-size:42px;font-weight:400;color:#1a1612;letter-spacing:-.03em;line-height:1}
-        .cq-plan-price-per{font-size:13px;color:#a09890}
-        .cq-plan-desc{font-size:13px;color:#7d756c;margin-bottom:20px;line-height:1.4}
-        .cq-plan-features{list-style:none;padding:0;margin:0 0 24px;flex:1}
-        .cq-plan-features li{font-size:12.5px;color:#413c36;padding:5px 0;display:flex;align-items:flex-start;gap:8px;line-height:1.4}
-        .cq-plan-features li::before{content:'✓';color:#4a8a32;font-weight:700;font-size:13px;flex-shrink:0}
-        .cq-plan-btn{width:100%;padding:11px;border-radius:10px;font-size:13.5px;font-weight:600;cursor:pointer;border:none;transition:all .15s ease;font-family:inherit}
-        .cq-plan-btn-primary{background:#1a1612;color:#fdfcfb;box-shadow:0 2px 8px rgba(26,22,18,.2)}
-        .cq-plan-btn-primary:hover{background:#2d2520;transform:translateY(-1px);box-shadow:0 4px 16px rgba(26,22,18,.3)}
-        .cq-plan-btn-brand{background:#4a8a32;color:#fff;box-shadow:0 2px 8px rgba(74,138,50,.3)}
-        .cq-plan-btn-brand:hover{background:#3a6e24;transform:translateY(-1px);box-shadow:0 4px 16px rgba(74,138,50,.4)}
-        .cq-plan-btn-ghost{background:transparent;color:#7d756c;border:1px solid rgba(164,156,144,.3)}
-        .cq-plan-btn-ghost:hover{background:#f7f5f3;color:#1a1612}
-        .cq-plan-btn-current{background:#6366f1;color:#fff;cursor:default}
-        .cq-plan-limits{font-size:11px;color:#a09890;text-align:center;margin-top:8px}
-        @media(max-width:1200px){.cq-pricing{grid-template-columns:repeat(3,1fr)}}
-        @media(max-width:768px){.cq-pricing{grid-template-columns:repeat(2,1fr)}}
-        @media(max-width:600px){.cq-pricing{grid-template-columns:1fr}}
-      `}} />
+      <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
-      <div className="cq-pricing-wrap">
+      <div className="cp">
 
-      {/* Current plan indicator */}
-      <div style={{
-        background: "#fdfcfb", borderRadius: 14, border: "1px solid rgba(164,156,144,.18)",
-        padding: "16px 24px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between",
-      }}>
-        <div>
-          <span style={{ fontSize: 13, color: "#7d756c" }}>Plan actuel : </span>
-          <span style={{ fontSize: 15, fontWeight: 700, color: "#1a1612" }}>{currentTier === "FREE" ? "Free" : currentTier === "STARTER" ? "Starter" : currentTier === "GROWTH" ? "Growth" : currentTier === "PRO" ? "Pro" : "Scale"}</span>
-        </div>
-        <span style={{
-          fontSize: 11, fontWeight: 600, padding: "4px 12px", borderRadius: 999,
-          background: currentTier === "FREE" ? "#f3f4f6" : currentTier === "STARTER" ? "#dbeafe" : currentTier === "GROWTH" ? "#dcfce7" : currentTier === "PRO" ? "#ede9fe" : "#fef3c7",
-          color: currentTier === "FREE" ? "#6b7280" : currentTier === "STARTER" ? "#1d4ed8" : currentTier === "GROWTH" ? "#166534" : currentTier === "PRO" ? "#6d28d9" : "#92400e",
-        }}>
-          {currentTier === "FREE" ? "Gratuit" : "Actif"}
-        </span>
-      </div>
-
-      {/* Plans grid */}
-      <div className="cq-pricing">
-        {PLANS.map((plan) => {
-          const isCurrent = plan.tier === currentTier;
-          const isUpgrade = TIER_LEVEL[plan.tier] > TIER_LEVEL[currentTier];
-          const isDowngrade = TIER_LEVEL[plan.tier] < TIER_LEVEL[currentTier];
-          const isRecommended = plan.badge === "Recommandé";
-
-          return (
-            <div key={plan.tier} className={`cq-plan ${isRecommended ? "cq-plan-rec" : ""} ${isCurrent ? "cq-plan-current" : ""}`}>
-              {/* Badge */}
-              {plan.badge && !isCurrent && (
-                <div className="cq-plan-badge" style={{
-                  background: isRecommended ? "#4a8a32" : "#1a1612",
-                  color: "#fff",
-                }}>{plan.badge}</div>
-              )}
-              {isCurrent && (
-                <div className="cq-plan-badge" style={{ background: "#6366f1", color: "#fff" }}>Plan actuel</div>
-              )}
-
-              {/* Header */}
-              <div className="cq-plan-name">{plan.name}</div>
-              <div className="cq-plan-price">
-                <span className="cq-plan-price-num">{plan.price}</span>
-                <span className="cq-plan-price-per">{plan.period}</span>
-              </div>
-              <div className="cq-plan-desc">{plan.description}</div>
-
-              {/* Features */}
-              <ul className="cq-plan-features">
-                {plan.features.map((f, i) => (
-                  <li key={i}>{f}</li>
-                ))}
-              </ul>
-
-              {/* CTA */}
-              <button
-                className={`cq-plan-btn ${isCurrent ? "cq-plan-btn-current" : isRecommended ? "cq-plan-btn-brand" : isUpgrade ? "cq-plan-btn-primary" : "cq-plan-btn-ghost"}`}
-                onClick={() => handleSelect(plan.tier)}
-                disabled={isCurrent || isChanging}
-              >
-                {isCurrent ? "Plan actuel" : isDowngrade ? "Rétrograder" : plan.cta}
-              </button>
-
-              <div className="cq-plan-limits">{plan.limits}</div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* FAQ */}
-      <div style={{ background: "#fdfcfb", borderRadius: 14, border: "1px solid rgba(164,156,144,.18)", padding: 24 }}>
-        <div style={{ fontSize: 15, fontWeight: 700, color: "#1a1612", marginBottom: 16 }}>Questions fréquentes</div>
-        {[
-          { q: "Puis-je changer de plan à tout moment ?", a: "Oui, vous pouvez upgrader ou rétrograder à tout moment. Le changement prend effet immédiatement." },
-          { q: "Y a-t-il un engagement ?", a: "Non, tous les plans sont sans engagement. Vous pouvez annuler à tout moment." },
-          { q: "Comment fonctionne la facturation ?", a: "Le paiement est géré directement par Shopify sur votre facture habituelle. Pas besoin d'entrer une carte bancaire supplémentaire." },
-          { q: "Que se passe-t-il si je dépasse la limite de produits ?", a: "Les produits existants restent scorés. Les nouveaux produits ne seront pas analysés tant que vous n'aurez pas upgradé." },
-          { q: "Le DPP est-il obligatoire ?", a: "Le Passeport Numérique Produit sera obligatoire en EU dès 2027 pour le textile. Nous recommandons de vous préparer dès maintenant avec le plan Growth." },
-        ].map((faq, i) => (
-          <div key={i} style={{ marginBottom: i < 4 ? 14 : 0, paddingBottom: i < 4 ? 14 : 0, borderBottom: i < 4 ? "1px solid rgba(164,156,144,.1)" : "none" }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1612", marginBottom: 4 }}>{faq.q}</div>
-            <div style={{ fontSize: 12.5, color: "#7d756c", lineHeight: 1.5 }}>{faq.a}</div>
+        {/* Current plan banner */}
+        <div className="cp-current cp-anim">
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <span style={{ fontSize: 12, color: "#9C9488" }}>Plan actuel</span>
+            <span className="cp-current-plan">{tierName(currentTier)}</span>
           </div>
-        ))}
-      </div>
+          <span className="cp-current-badge" style={{
+            background: currentTier === "FREE" ? "rgba(164,156,144,.1)" : "rgba(74,124,89,.1)",
+            color: currentTier === "FREE" ? "#9C9488" : "#15803D",
+            border: `1px solid ${currentTier === "FREE" ? "rgba(164,156,144,.15)" : "rgba(74,124,89,.15)"}`,
+          }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor", display: "inline-block" }} />
+            {currentTier === "FREE" ? "Gratuit" : "Actif"}
+          </span>
+        </div>
 
-      </div>{/* close cq-pricing-wrap */}
+        {/* Plans grid */}
+        <div className="cp-grid">
+          {PLANS.map((plan) => {
+            const isCurrent = plan.tier === currentTier;
+            const isUpgrade = TIER_LEVEL[plan.tier] > TIER_LEVEL[currentTier];
+            const isDowngrade = TIER_LEVEL[plan.tier] < TIER_LEVEL[currentTier];
+            const isRec = plan.badge === "Recommande" || plan.badge === "Recommandé";
+
+            return (
+              <div key={plan.tier} className={`cp-card cp-anim ${isRec ? "cp-card--rec" : ""} ${isCurrent ? "cp-card--cur" : ""}`}>
+                {plan.badge && !isCurrent && (
+                  <div className="cp-badge" style={{
+                    background: isRec ? "#4A7C59" : "#2C2825", color: "#FDFCFB",
+                  }}>{plan.badge}</div>
+                )}
+                {isCurrent && (
+                  <div className="cp-badge" style={{ background: "#2C2825", color: "#FDFCFB" }}>Plan actuel</div>
+                )}
+
+                <div className="cp-name">{plan.name}</div>
+                <div className="cp-price">
+                  <span className="cp-price-num">{plan.price}</span>
+                  <span className="cp-price-per">{plan.period}</span>
+                </div>
+                <div className="cp-desc">{plan.description}</div>
+
+                <ul className="cp-features">
+                  {plan.features.map((f, i) => (
+                    <li key={i}>{f}</li>
+                  ))}
+                </ul>
+
+                <button
+                  className={`cp-btn ${isCurrent ? "cp-btn--cur" : isRec ? "cp-btn--brand" : isUpgrade ? "cp-btn--dark" : "cp-btn--ghost"}`}
+                  onClick={() => handleSelect(plan.tier)}
+                  disabled={isCurrent || isChanging}
+                >
+                  {isCurrent ? "Plan actuel" : isDowngrade ? "Rétrograder" : plan.cta}
+                </button>
+
+                <div className="cp-limits">{plan.limits}</div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* FAQ */}
+        <div className="cp-faq cp-anim" style={{ animationDelay: ".2s" }}>
+          <div className="cp-faq-title">Questions fréquentes</div>
+          {[
+            { q: "Puis-je changer de plan à tout moment ?", a: "Oui, vous pouvez upgrader ou rétrograder à tout moment. Le changement prend effet immédiatement." },
+            { q: "Y a-t-il un engagement ?", a: "Non, tous les plans sont sans engagement. Vous pouvez annuler à tout moment." },
+            { q: "Comment fonctionne la facturation ?", a: "Le paiement est géré directement par Shopify sur votre facture habituelle. Pas besoin d'entrer une carte bancaire supplémentaire." },
+            { q: "Que se passe-t-il si je dépasse la limite de produits ?", a: "Les produits existants restent scorés. Les nouveaux produits ne seront pas analysés tant que vous n'aurez pas upgradé." },
+            { q: "Le DPP est-il obligatoire ?", a: "Le Passeport Numérique Produit sera obligatoire en EU dès 2027 pour le textile. Nous recommandons de vous préparer dès maintenant avec le plan Growth." },
+          ].map((faq, i) => (
+            <div key={i} className="cp-faq-item">
+              <div className="cp-faq-q">{faq.q}</div>
+              <div className="cp-faq-a">{faq.a}</div>
+            </div>
+          ))}
+        </div>
+
+      </div>
     </s-page>
   );
 }

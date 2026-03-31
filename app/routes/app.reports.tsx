@@ -8,6 +8,7 @@ import { useLoaderData, useFetcher } from "react-router";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
+import { BASE_CSS, INIT_SCRIPT, COLORS } from "../lib/ui/shared-styles";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
@@ -136,6 +137,43 @@ const PERIOD_LABELS: Record<string, string> = {
   ANNUAL: "Annuel",
 };
 
+const PERIOD_SVGS: Record<string, string> = {
+  MONTHLY: `<svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" stroke="${COLORS.green}" stroke-width="1.5"/><path d="M16 2v4M8 2v4M3 10h18" stroke="${COLORS.green}" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  QUARTERLY: `<svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M3 3v18h18M7 17V13m4 4V9m4 8V5m4 12v-6" stroke="${COLORS.green}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  ANNUAL: `<svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M3 3v18h18M7 17l4-4 4 4 5-6" stroke="${COLORS.green}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+};
+
+const PAGE_CSS = `
+/* Period cards */
+.cq-period-card{
+  background:rgba(253,252,251,.7);backdrop-filter:blur(16px) saturate(1.3);
+  -webkit-backdrop-filter:blur(16px) saturate(1.3);
+  border:1px solid rgba(255,255,255,.6);border-radius:18px;
+  padding:24px;text-align:center;cursor:pointer;
+  box-shadow:0 1px 3px rgba(44,40,37,.04),0 4px 16px rgba(44,40,37,.04);
+  transition:all .25s cubic-bezier(.22,1,.36,1);
+}
+.cq-period-card:hover{
+  border-color:rgba(74,124,89,.2);transform:translateY(-2px);
+  box-shadow:0 2px 6px rgba(44,40,37,.06),0 8px 24px rgba(44,40,37,.08);
+}
+.cq-period-card:disabled{opacity:.5;cursor:wait;transform:none!important}
+.cq-period-card-icon{margin-bottom:10px}
+
+/* Report row */
+.cq-report-row{
+  padding:18px 24px;border-bottom:1px solid rgba(164,156,144,.05);
+  transition:background .15s ease;
+}
+.cq-report-row:last-child{border-bottom:none}
+.cq-report-row:hover{background:rgba(74,124,89,.02)}
+
+/* Mini stats */
+.cq-mini-stats{display:flex;gap:20px;margin-top:12px;flex-wrap:wrap}
+.cq-mini-stat-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${COLORS.textMuted}}
+.cq-mini-stat-val{font-family:'DM Mono',monospace;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
+`;
+
 export default function Reports() {
   const { reports, shopName } = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
@@ -146,139 +184,151 @@ export default function Reports() {
   }, [fetcher]);
 
   return (
-    <s-page heading="Rapports RSE">
+    <>
+      <style dangerouslySetInnerHTML={{ __html: BASE_CSS + PAGE_CSS }} />
+      <script dangerouslySetInnerHTML={{ __html: INIT_SCRIPT }} />
 
-      {/* Generate buttons */}
-      <div style={{
-        display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12,
-        marginBottom: 24,
-      }}>
-        {(["MONTHLY", "QUARTERLY", "ANNUAL"] as const).map((period) => (
-          <button
-            key={period}
-            onClick={() => handleGenerate(period)}
-            disabled={isGenerating}
-            style={{
-              background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb",
-              padding: "20px", cursor: isGenerating ? "wait" : "pointer",
-              textAlign: "center", transition: "all 0.2s ease",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#6366f1"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(99,102,241,0.1)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.boxShadow = "none"; }}
-          >
-            <div style={{ fontSize: 24, marginBottom: 8 }}>
-              {period === "MONTHLY" ? "📅" : period === "QUARTERLY" ? "📊" : "📈"}
-            </div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>
-              Rapport {PERIOD_LABELS[period]}
-            </div>
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
-              {period === "MONTHLY" ? "Ce mois" : period === "QUARTERLY" ? "Ce trimestre" : "Cette année"}
-            </div>
-          </button>
-        ))}
-      </div>
-
-      {/* Info banner */}
-      <div style={{
-        background: "linear-gradient(135deg, #f5f3ff, #ede9fe)",
-        border: "1px solid #ddd6fe", borderRadius: 12,
-        padding: 20, marginBottom: 20,
-      }}>
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-          <span style={{ fontSize: 24 }}>📋</span>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "#5b21b6", marginBottom: 4 }}>
-              Compatible CSRD
-            </div>
-            <div style={{ fontSize: 13, color: "#7c3aed", lineHeight: 1.5 }}>
-              Vos rapports RSE sont structurés selon la directive européenne CSRD
-              (Corporate Sustainability Reporting Directive). Utilisez-les pour vos
-              obligations de reporting ou votre communication RSE.
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Reports list */}
-      <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb", overflow: "hidden" }}>
-        <div style={{ padding: "16px 20px", borderBottom: "1px solid #f3f4f6" }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>Rapports générés</span>
+      <div className="cq-page">
+        {/* Page header */}
+        <div style={{ marginBottom: 24 }}>
+          <h1 className="cq-display" style={{ fontSize: 28, color: COLORS.dark }}>
+            Rapports RSE
+          </h1>
+          <p style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 4 }}>
+            Générez des rapports de durabilité conformes aux standards européens
+          </p>
         </div>
 
-        {reports.length === 0 ? (
-          <div style={{ padding: "40px 20px", textAlign: "center" }}>
-            <div style={{ fontSize: 28, marginBottom: 8 }}>📄</div>
-            <div style={{ fontSize: 14, color: "#6b7280" }}>
-              Aucun rapport généré. Choisissez une période ci-dessus.
-            </div>
-          </div>
-        ) : (
-          <div>
-            {reports.map((report, i) => {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              let data: any = {};
-              try { data = JSON.parse(report.dataJson); } catch { /* ignore parse errors */ }
-              const summary = data.summary ?? {};
+        {/* Generate period cards */}
+        <div className="cq-grid-3 cq-stagger cq-anim" style={{ marginBottom: 20 }}>
+          {(["MONTHLY", "QUARTERLY", "ANNUAL"] as const).map((period) => (
+            <button
+              key={period}
+              className="cq-period-card cq-anim"
+              onClick={() => handleGenerate(period)}
+              disabled={isGenerating}
+            >
+              <div className="cq-period-card-icon" dangerouslySetInnerHTML={{ __html: PERIOD_SVGS[period] }} />
+              <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.dark }}>
+                Rapport {PERIOD_LABELS[period]}
+              </div>
+              <div style={{ fontSize: 12, color: COLORS.textMuted, marginTop: 4 }}>
+                {period === "MONTHLY" ? "Ce mois" : period === "QUARTERLY" ? "Ce trimestre" : "Cette année"}
+              </div>
+            </button>
+          ))}
+        </div>
 
-              return (
-                <div key={report.id} style={{
-                  padding: "16px 20px",
-                  borderBottom: i < reports.length - 1 ? "1px solid #f9fafb" : "none",
-                  cursor: "pointer",
-                  transition: "background-color 0.15s ease",
-                }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f9fafb"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                        <span style={{
-                          fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 6,
-                          color: "#6366f1", backgroundColor: "#eef2ff",
-                        }}>
-                          {PERIOD_LABELS[report.period] ?? report.period}
-                        </span>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>
-                          {shopName}
-                        </span>
+        {/* CSRD info banner */}
+        <div className="cq-info cq-anim" style={{ animationDelay: ".06s" }}>
+          <svg width="20" height="20" fill="none" viewBox="0 0 24 24" style={{ flexShrink: 0, marginTop: 1 }}>
+            <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" stroke={COLORS.green} strokeWidth="1.5"/>
+            <rect x="9" y="3" width="6" height="4" rx="1" stroke={COLORS.green} strokeWidth="1.5"/>
+            <path d="M9 14l2 2 4-4" stroke={COLORS.green} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <div className="cq-info-text">
+            <strong>Compatible CSRD</strong> — Vos rapports RSE sont structurés selon la directive européenne CSRD
+            (Corporate Sustainability Reporting Directive). Utilisez-les pour vos
+            obligations de reporting ou votre communication RSE.
+          </div>
+        </div>
+
+        {/* Reports list */}
+        <div className="cq-glass cq-anim" style={{ animationDelay: ".09s" }}>
+          <div className="cq-glass-head">
+            <div className="cq-glass-icon" style={{ background: COLORS.greenLight }}>
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke={COLORS.green} strokeWidth="1.5"/>
+                <path d="M14 2v6h6M16 13H8m8 4H8m2-8H8" stroke={COLORS.green} strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <div className="cq-glass-title">Rapports générés</div>
+          </div>
+
+          {reports.length === 0 ? (
+            <div className="cq-empty">
+              <div className="cq-empty-icon">
+                <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke={COLORS.textMuted} strokeWidth="1.5"/>
+                  <path d="M14 2v6h6" stroke={COLORS.textMuted} strokeWidth="1.5"/>
+                </svg>
+              </div>
+              <div className="cq-empty-t">Aucun rapport généré</div>
+              <div className="cq-empty-d">
+                Choisissez une période ci-dessus pour générer votre premier rapport RSE.
+              </div>
+            </div>
+          ) : (
+            <div>
+              {reports.map((report) => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                let data: any = {};
+                try { data = JSON.parse(report.dataJson); } catch { /* ignore parse errors */ }
+                const summary = data.summary ?? {};
+
+                return (
+                  <div key={report.id} className="cq-report-row">
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                          <span className="cq-pill cq-pill-green">
+                            {PERIOD_LABELS[report.period] ?? report.period}
+                          </span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: COLORS.dark }}>
+                            {shopName}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: 12, color: COLORS.textMuted }}>
+                          {new Date(report.periodStart).toLocaleDateString("fr-FR")} — {new Date(report.periodEnd).toLocaleDateString("fr-FR")}
+                        </div>
                       </div>
-                      <div style={{ fontSize: 12, color: "#6b7280" }}>
-                        {new Date(report.periodStart).toLocaleDateString("fr-FR")} — {new Date(report.periodEnd).toLocaleDateString("fr-FR")}
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontSize: 12, color: COLORS.textFaint }}>
+                          Généré le {new Date(report.generatedAt).toLocaleDateString("fr-FR")}
+                        </div>
                       </div>
                     </div>
-                    <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: 12, color: "#9ca3af" }}>
-                        Généré le {new Date(report.generatedAt).toLocaleDateString("fr-FR")}
+
+                    <div className="cq-mini-stats">
+                      <div>
+                        <div className="cq-mini-stat-label">Empreinte</div>
+                        <div className="cq-mini-stat-val" style={{ color: COLORS.dark }}>
+                          {summary.totalCarbonKg ?? 0} <span style={{ fontSize: 10, color: COLORS.textMuted }}>kgCO₂e</span>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="cq-mini-stat-label">Compensé</div>
+                        <div className="cq-mini-stat-val" style={{ color: COLORS.green }}>
+                          {summary.totalOffsetKg ?? 0} <span style={{ fontSize: 10, color: COLORS.textMuted }}>kgCO₂e</span>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="cq-mini-stat-label">Net</div>
+                        <div className="cq-mini-stat-val" style={{ color: (summary.netCarbonKg ?? 0) <= 0 ? COLORS.green : COLORS.red }}>
+                          {summary.netCarbonKg ?? 0} <span style={{ fontSize: 10, color: COLORS.textMuted }}>kgCO₂e</span>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="cq-mini-stat-label">Arbres</div>
+                        <div className="cq-mini-stat-val" style={{ color: COLORS.green }}>
+                          {summary.treesPlanted ?? 0}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="cq-mini-stat-label">Produits</div>
+                        <div className="cq-mini-stat-val" style={{ color: COLORS.textMuted }}>
+                          {summary.totalProducts ?? 0}
+                        </div>
                       </div>
                     </div>
                   </div>
-
-                  {/* Mini stats */}
-                  <div style={{ display: "flex", gap: 16, marginTop: 12 }}>
-                    <MiniStat label="Empreinte" value={`${summary.totalCarbonKg ?? 0} kg`} color="#374151" />
-                    <MiniStat label="Compensé" value={`${summary.totalOffsetKg ?? 0} kg`} color="#16a34a" />
-                    <MiniStat label="Net" value={`${summary.netCarbonKg ?? 0} kg`} color={summary.netCarbonKg <= 0 ? "#16a34a" : "#ea580c"} />
-                    <MiniStat label="Arbres" value={`${summary.treesPlanted ?? 0}`} color="#16a34a" />
-                    <MiniStat label="Produits" value={`${summary.totalProducts ?? 0}`} color="#6b7280" />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
-    </s-page>
-  );
-}
-
-function MiniStat({ label, value, color }: { label: string; value: string; color: string }) {
-  return (
-    <div>
-      <div style={{ fontSize: 10, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</div>
-      <div style={{ fontSize: 14, fontWeight: 700, color, fontVariantNumeric: "tabular-nums" }}>{value}</div>
-    </div>
+    </>
   );
 }
 

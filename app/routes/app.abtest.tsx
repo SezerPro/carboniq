@@ -14,6 +14,7 @@ import {
   getTestResults,
   type TestType,
 } from "../lib/abtest/abtest.server";
+import { BASE_CSS, INIT_SCRIPT, COLORS } from "../lib/ui/shared-styles";
 
 // ── Loader ─────────────────────────────────────────────
 
@@ -116,37 +117,113 @@ const TEST_TYPE_LABELS: Record<string, string> = {
   badge_style: "Badge style",
   offset_placement: "Offset placement",
   messaging: "Messaging",
-  equivalence: "\u00c9quivalence",
+  equivalence: "Équivalence",
 };
 
-const TEST_TYPE_COLORS: Record<string, { color: string; bg: string }> = {
-  badge_style: { color: "#7c3aed", bg: "#ede9fe" },
-  offset_placement: { color: "#0891b2", bg: "#cffafe" },
-  messaging: { color: "#ea580c", bg: "#ffedd5" },
-  equivalence: { color: "#16a34a", bg: "#dcfce7" },
-};
-
-// ── Styles ─────────────────────────────────────────────
-
-const card = {
-  background: "#fff",
-  borderRadius: 12,
-  border: "1px solid #e5e7eb",
-  overflow: "hidden" as const,
+const TEST_TYPE_PILL: Record<string, string> = {
+  badge_style: "cq-pill cq-pill-green",
+  offset_placement: "cq-pill cq-pill-blue",
+  messaging: "cq-pill cq-pill-amber",
+  equivalence: "cq-pill cq-pill-green",
 };
 
 // ── Presets ──────────────────────────────────────────
 
 const PRESETS = [
-  { icon: "🎨", name: "Pill vs Leaf", desc: "Comparez les 2 styles de badge les plus populaires", type: "badge_style",
+  { name: "Pill vs Leaf", desc: "Comparez les 2 styles de badge les plus populaires", type: "badge_style",
     a: '{"style":"pill","showScore":true,"showLabel":true}', b: '{"style":"leaf","showScore":true,"showLabel":true}' },
-  { icon: "💬", name: "Impact vs Score brut", desc: "Texte descriptif vs valeur numerique", type: "messaging",
+  { name: "Impact vs Score brut", desc: "Texte descriptif vs valeur numérique", type: "messaging",
     a: '{"text":"Faible impact carbone","showIcon":true}', b: '{"text":"4.0 kg CO₂e","showIcon":false}' },
-  { icon: "🚗", name: "Voiture vs Netflix", desc: "Quelle equivalence convertit le mieux ?", type: "equivalence",
-    a: '{"equivalence":"car","text":"= {value} km en voiture","icon":"🚗"}', b: '{"equivalence":"netflix","text":"= {value}h de streaming","icon":"📺"}' },
-  { icon: "📍", name: "Avant vs Apres panier", desc: "Testez le placement de l'offset", type: "offset_placement",
+  { name: "Voiture vs Netflix", desc: "Quelle équivalence convertit le mieux ?", type: "equivalence",
+    a: '{"equivalence":"car","text":"= {value} km en voiture","icon":"car"}', b: '{"equivalence":"netflix","text":"= {value}h de streaming","icon":"tv"}' },
+  { name: "Avant vs Après panier", desc: "Testez le placement de l\'offset", type: "offset_placement",
     a: '{"position":"before_add_to_cart","label":"Compenser"}', b: '{"position":"after_add_to_cart","label":"Rendre neutre"}' },
 ];
+
+const PRESET_ICONS = [
+  `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${COLORS.green}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>`,
+  `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${COLORS.amber}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+  `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${COLORS.teal}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
+  `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${COLORS.blue}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2" ry="2"/><polyline points="16 8 20 8 23 11 23 16 19 16"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`,
+];
+
+// ── Page CSS ──────────────────────────────────────────
+
+const PAGE_CSS = `
+/* Preset card */
+.cq-preset{
+  background:rgba(253,252,251,.7);backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.6);border-radius:16px;
+  padding:18px 16px;cursor:pointer;text-align:left;
+  font-family:'DM Sans',sans-serif;
+  box-shadow:0 1px 3px rgba(44,40,37,.04);transition:all .2s ease;
+}
+.cq-preset:hover{border-color:rgba(74,124,89,.25);box-shadow:0 4px 16px rgba(74,124,89,.08);transform:translateY(-2px)}
+.cq-preset:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
+.cq-preset-icon{margin-bottom:10px}
+.cq-preset-name{font-size:13px;font-weight:700;color:${COLORS.dark}}
+.cq-preset-desc{font-size:11px;color:${COLORS.textMuted};margin-top:3px;line-height:1.4}
+
+/* Form */
+.cq-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.cq-form-label{display:block;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${COLORS.textMuted};margin-bottom:6px}
+.cq-form-input{
+  width:100%;padding:10px 14px;border-radius:12px;font-size:13px;
+  border:1px solid rgba(164,156,144,.15);background:rgba(253,252,251,.6);
+  font-family:'DM Sans',sans-serif;box-sizing:border-box;
+  transition:border-color .2s;
+}
+.cq-form-input:focus{outline:none;border-color:${COLORS.green};box-shadow:0 0 0 3px rgba(74,124,89,.1)}
+.cq-form-textarea{font-family:'DM Mono',monospace;resize:vertical}
+.cq-form-range{flex:1;accent-color:${COLORS.green}}
+
+/* Variant columns */
+.cq-variant-col{padding:20px;position:relative}
+.cq-variant-col--right{border-left:1px solid rgba(164,156,144,.08)}
+.cq-variant-col--winner{background:rgba(74,124,89,.04)}
+.cq-variant-header{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.cq-variant-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.cq-variant-label{font-size:13px;font-weight:600;color:${COLORS.text}}
+.cq-variant-leader{font-size:10px;font-weight:700;color:#15803D;padding:2px 8px;border-radius:6px;background:rgba(74,124,89,.1)}
+.cq-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cq-stat-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${COLORS.textMuted};margin-bottom:2px}
+.cq-stat-val{font-size:15px;font-weight:700;color:${COLORS.text}}
+.cq-stat-val--lg{font-size:18px;color:${COLORS.dark}}
+
+/* Badge preview */
+.cq-badge-preview{display:flex;align-items:center;gap:10px}
+.cq-badge-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.cq-badge-kv{font-size:10px;padding:2px 6px;border-radius:6px;background:rgba(253,252,251,.8);border:1px solid rgba(164,156,144,.1);color:${COLORS.textMuted};font-family:'DM Mono',monospace}
+
+/* Completed card */
+.cq-completed{opacity:.85}
+.cq-completed-bar{height:3px;background:${COLORS.textFaint}}
+.cq-completed-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;padding:0 24px 16px}
+.cq-mini-stat{text-align:center}
+.cq-mini-label{font-size:10px;color:${COLORS.textMuted};margin-bottom:2px}
+.cq-mini-val{font-size:13px;font-weight:700;color:${COLORS.text}}
+.cq-mini-val--win{color:#15803D}
+
+/* Active dot */
+.cq-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
+.cq-dot--active{background:#22c55e;animation:cqPulse 2s ease-in-out infinite}
+.cq-dot--inactive{background:${COLORS.textFaint}}
+
+/* Recommendation box */
+.cq-reco{
+  padding:16px 20px;border-top:1px solid rgba(164,156,144,.08);
+  background:rgba(217,119,6,.04);display:flex;align-items:flex-start;gap:12px;
+}
+.cq-reco-title{font-size:12px;font-weight:700;color:#92400e;margin-bottom:4px}
+.cq-reco-text{font-size:12px;color:#A16207;line-height:1.5}
+
+/* Section title */
+.cq-section-title{font-size:15px;font-weight:700;color:${COLORS.dark};margin-bottom:12px;display:flex;align-items:center;gap:8px}
+
+/* Top accent bar */
+.cq-accent-bar{height:3px;background:linear-gradient(90deg,${COLORS.green},${COLORS.teal})}
+`;
 
 // ── Component ──────────────────────────────────────────
 
@@ -159,95 +236,114 @@ export default function ABTestPage() {
   const isSubmitting = fetcher.state !== "idle";
 
   return (
-    <s-page heading="A/B Testing">
-      <s-button
-        slot="primary-action"
-        onClick={() => setShowCreate(!showCreate)}
-      >
-        {showCreate ? "Annuler" : "Nouveau test"}
-      </s-button>
+    <div className="cq-page">
+      <style dangerouslySetInnerHTML={{ __html: BASE_CSS + PAGE_CSS }} />
+      <script dangerouslySetInnerHTML={{ __html: INIT_SCRIPT }} />
+
+      {/* Page header */}
+      <div className="cq-glass cq-anim" style={{ marginBottom: 20 }}>
+        <div className="cq-glass-head" style={{ justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div className="cq-glass-icon" style={{ background: COLORS.greenLight, color: COLORS.green }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>
+            </div>
+            <div>
+              <div className="cq-glass-title">A/B Testing</div>
+              <div className="cq-glass-desc">Testez et optimisez vos badges carbone</div>
+            </div>
+          </div>
+          <button className={`cq-btn ${showCreate ? "cq-btn-ghost" : "cq-btn-green"}`} onClick={() => setShowCreate(!showCreate)}>
+            {showCreate ? "Annuler" : "Nouveau test"}
+          </button>
+        </div>
+      </div>
 
       {/* ── Quick launch presets ── */}
       {!showCreate && activeTests.length === 0 && (
-        <div style={{ ...card, marginBottom: 20, padding: 20 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#111827", marginBottom: 4 }}>Tests populaires</div>
-          <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 14 }}>Lancez un test en 1 clic — pas besoin de JSON.</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
-            {PRESETS.map((p, i) => (
-              <fetcher.Form key={i} method="POST">
-                <input type="hidden" name="intent" value="create" />
-                <input type="hidden" name="name" value={p.name} />
-                <input type="hidden" name="testType" value={p.type} />
-                <input type="hidden" name="variantA" value={p.a} />
-                <input type="hidden" name="variantB" value={p.b} />
-                <input type="hidden" name="trafficSplit" value="0.5" />
-                <button type="submit" disabled={isSubmitting} style={{
-                  width: "100%", padding: "12px 14px", borderRadius: 10, border: "1px solid #e5e7eb",
-                  background: "#fff", cursor: "pointer", textAlign: "left", transition: "all 0.15s ease",
-                  fontFamily: "inherit",
-                }}
-                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#6366f1"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(99,102,241,0.1)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.boxShadow = "none"; }}
-                >
-                  <div style={{ fontSize: 18, marginBottom: 6 }}>{p.icon}</div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>{p.name}</div>
-                  <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{p.desc}</div>
-                </button>
-              </fetcher.Form>
-            ))}
+        <div className="cq-glass cq-anim" style={{ animationDelay: ".06s" }}>
+          <div className="cq-glass-head">
+            <div className="cq-glass-icon" style={{ background: COLORS.amberLight, color: COLORS.amber }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            </div>
+            <div>
+              <div className="cq-glass-title">Tests populaires</div>
+              <div className="cq-glass-desc">Lancez un test en 1 clic — pas besoin de JSON.</div>
+            </div>
+          </div>
+          <div className="cq-glass-body">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+              {PRESETS.map((p, i) => (
+                <fetcher.Form key={i} method="POST">
+                  <input type="hidden" name="intent" value="create" />
+                  <input type="hidden" name="name" value={p.name} />
+                  <input type="hidden" name="testType" value={p.type} />
+                  <input type="hidden" name="variantA" value={p.a} />
+                  <input type="hidden" name="variantB" value={p.b} />
+                  <input type="hidden" name="trafficSplit" value="0.5" />
+                  <button type="submit" disabled={isSubmitting} className="cq-preset">
+                    <div className="cq-preset-icon" dangerouslySetInnerHTML={{ __html: PRESET_ICONS[i] }} />
+                    <div className="cq-preset-name">{p.name}</div>
+                    <div className="cq-preset-desc">{p.desc}</div>
+                  </button>
+                </fetcher.Form>
+              ))}
+            </div>
           </div>
         </div>
       )}
 
       {/* ── Create form (advanced) ── */}
       {showCreate && (
-        <div style={{ ...card, marginBottom: 20, border: "2px solid #6366f1" }}>
-          <div style={{ padding: "16px 20px", borderBottom: "1px solid #f3f4f6", background: "linear-gradient(135deg, #eff6ff, #ede9fe)" }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>Creer un test A/B personnalise</div>
+        <div className="cq-glass cq-anim" style={{ borderColor: `rgba(74,124,89,.3)` }}>
+          <div className="cq-glass-head" style={{ background: "rgba(74,124,89,.04)" }}>
+            <div className="cq-glass-icon" style={{ background: COLORS.greenLight, color: COLORS.green }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </div>
+            <div className="cq-glass-title">Créer un test A/B personnalisé</div>
           </div>
-          <div style={{ padding: 20 }}>
+          <div className="cq-glass-body">
             <fetcher.Form method="POST">
               <input type="hidden" name="intent" value="create" />
               <input type="hidden" name="trafficSplit" value={(trafficSplit / 100).toString()} />
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+              <div className="cq-form-grid">
                 <div>
-                  <label htmlFor="abtest-name" style={labelStyle}>Nom du test</label>
-                  <input id="abtest-name" name="name" placeholder="Ex: Badge vert vs badge bleu" required style={inputStyle} />
+                  <label htmlFor="abtest-name" className="cq-form-label">Nom du test</label>
+                  <input id="abtest-name" name="name" placeholder="Ex: Badge vert vs badge bleu" required className="cq-form-input" />
                 </div>
                 <div>
-                  <label htmlFor="abtest-type" style={labelStyle}>Type de test</label>
-                  <select id="abtest-type" name="testType" required style={inputStyle}>
+                  <label htmlFor="abtest-type" className="cq-form-label">Type de test</label>
+                  <select id="abtest-type" name="testType" required className="cq-form-input">
                     <option value="badge_style">Badge style</option>
                     <option value="offset_placement">Offset placement</option>
                     <option value="messaging">Messaging</option>
-                    <option value="equivalence">Equivalence</option>
+                    <option value="equivalence">Équivalence</option>
                   </select>
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+              <div className="cq-form-grid">
                 <div>
-                  <label htmlFor="abtest-variantA" style={labelStyle}>Variant A (JSON)</label>
-                  <textarea id="abtest-variantA" name="variantA" required rows={4} placeholder='{"style":"pill","showScore":true}' style={{ ...inputStyle, fontFamily: "monospace", resize: "vertical" }} />
+                  <label htmlFor="abtest-variantA" className="cq-form-label">Variant A (JSON)</label>
+                  <textarea id="abtest-variantA" name="variantA" required rows={4} placeholder='{"style":"pill","showScore":true}' className="cq-form-input cq-form-textarea" />
                 </div>
                 <div>
-                  <label htmlFor="abtest-variantB" style={labelStyle}>Variant B (JSON)</label>
-                  <textarea id="abtest-variantB" name="variantB" required rows={4} placeholder='{"style":"leaf","showScore":true}' style={{ ...inputStyle, fontFamily: "monospace", resize: "vertical" }} />
+                  <label htmlFor="abtest-variantB" className="cq-form-label">Variant B (JSON)</label>
+                  <textarea id="abtest-variantB" name="variantB" required rows={4} placeholder='{"style":"leaf","showScore":true}' className="cq-form-input cq-form-textarea" />
                 </div>
               </div>
 
               <div style={{ marginBottom: 20 }}>
-                <label style={labelStyle}>Repartition du trafic : {trafficSplit}% A / {100 - trafficSplit}% B</label>
+                <label className="cq-form-label">Répartition du trafic : {trafficSplit}% A / {100 - trafficSplit}% B</label>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>A</span>
-                  <input type="range" min={10} max={90} value={trafficSplit} onChange={(e) => setTrafficSplit(parseInt(e.target.value))} style={{ flex: 1, accentColor: "#6366f1" }} />
-                  <span style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>B</span>
+                  <span style={{ fontSize: 12, color: COLORS.textMuted, fontWeight: 600 }}>A</span>
+                  <input type="range" min={10} max={90} value={trafficSplit} onChange={(e) => setTrafficSplit(parseInt(e.target.value))} className="cq-form-range" />
+                  <span style={{ fontSize: 12, color: COLORS.textMuted, fontWeight: 600 }}>B</span>
                 </div>
               </div>
 
-              <button type="submit" disabled={isSubmitting} style={{ padding: "10px 24px", borderRadius: 8, fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer", color: "white", background: "linear-gradient(135deg, #6366f1, #4f46e5)", opacity: isSubmitting ? 0.6 : 1, fontFamily: "inherit" }}>
-                {isSubmitting ? "Creation..." : "Lancer le test"}
+              <button type="submit" disabled={isSubmitting} className="cq-btn cq-btn-green">
+                {isSubmitting ? "Création..." : "Lancer le test"}
               </button>
             </fetcher.Form>
           </div>
@@ -256,32 +352,29 @@ export default function ABTestPage() {
 
       {/* ── Z-test explanation ── */}
       {activeTests.length > 0 && (
-        <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "12px 16px", marginBottom: 16, display: "flex", alignItems: "flex-start", gap: 10 }}>
-          <span style={{ fontSize: 16, flexShrink: 0 }}>📊</span>
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 2 }}>Comment lire les resultats</div>
-            <div style={{ fontSize: 11.5, color: "#64748b", lineHeight: 1.5 }}>
-              <strong>Z-score</strong> mesure la difference entre les variantes. Quand <strong>|Z| &gt; 1.96</strong>, le resultat est <strong style={{ color: "#16a34a" }}>significatif a 95%</strong> — il y a moins de 5% de chance que la difference soit due au hasard.
-              En general, il faut <strong>~500 impressions par variante</strong> pour obtenir un resultat fiable.
-            </div>
+        <div className="cq-info cq-anim" style={{ animationDelay: ".06s" }}>
+          <svg className="cq-info-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={COLORS.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          <div className="cq-info-text">
+            <strong>Comment lire les résultats :</strong> le <strong>Z-score</strong> mesure la différence entre les variantes. Quand <strong>|Z| &gt; 1.96</strong>, le résultat est <strong>significatif à 95%</strong> — il y a moins de 5% de chance que la différence soit due au hasard. En général, il faut <strong>~500 impressions par variante</strong> pour un résultat fiable.
           </div>
         </div>
       )}
 
       {/* ── Active tests ── */}
       <div style={{ marginBottom: 28 }}>
-        <div style={{ fontSize: 15, fontWeight: 700, color: "#111827", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{
-            width: 8, height: 8, borderRadius: "50%",
-            backgroundColor: "#22c55e", display: "inline-block",
-          }} />
+        <div className="cq-section-title">
+          <span className="cq-dot cq-dot--active" />
           Tests actifs ({activeTests.length})
         </div>
 
         {activeTests.length === 0 && (
-          <div style={{ ...card, padding: 32, textAlign: "center" }}>
-            <div style={{ fontSize: 13, color: "#9ca3af" }}>
-              Aucun test actif. Creez un nouveau test pour commencer.
+          <div className="cq-glass">
+            <div className="cq-empty">
+              <div className="cq-empty-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={COLORS.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              </div>
+              <div className="cq-empty-t">Aucun test actif</div>
+              <div className="cq-empty-d">Créez un nouveau test pour commencer à optimiser vos badges carbone.</div>
             </div>
           </div>
         )}
@@ -294,12 +387,9 @@ export default function ABTestPage() {
       {/* ── Completed tests ── */}
       {completedTests.length > 0 && (
         <div>
-          <div style={{ fontSize: 15, fontWeight: 700, color: "#111827", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{
-              width: 8, height: 8, borderRadius: "50%",
-              backgroundColor: "#9ca3af", display: "inline-block",
-            }} />
-            Tests termines ({completedTests.length})
+          <div className="cq-section-title">
+            <span className="cq-dot cq-dot--inactive" />
+            Tests terminés ({completedTests.length})
           </div>
 
           {completedTests.map((test) => (
@@ -307,7 +397,7 @@ export default function ABTestPage() {
           ))}
         </div>
       )}
-    </s-page>
+    </div>
   );
 }
 
@@ -337,18 +427,18 @@ type TestData = {
   recommendedWinner: string | null;
 };
 
-function BadgePreview({ label, config, color }: { label: string; config: string; color: string }) {
+function BadgePreview({ label, config, colorHex }: { label: string; config: string; colorHex: string }) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let parsed: Record<string, any> = {};
   try { parsed = JSON.parse(config); } catch { /* ignore parse errors */ }
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <span style={{ width: 8, height: 8, borderRadius: 2, background: color, flexShrink: 0 }} />
+    <div className="cq-badge-preview">
+      <span className="cq-badge-dot" style={{ background: colorHex }} />
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: "#374151", marginBottom: 4 }}>{label}</div>
+        <div style={{ fontSize: 11, fontWeight: 600, color: COLORS.text, marginBottom: 4 }}>{label}</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
           {Object.entries(parsed).map(([k, v]) => (
-            <span key={k} style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: "#fff", border: "1px solid #e5e7eb", color: "#6b7280", fontFamily: "monospace" }}>
+            <span key={k} className="cq-badge-kv">
               {k}: {String(v)}
             </span>
           ))}
@@ -359,37 +449,34 @@ function BadgePreview({ label, config, color }: { label: string; config: string;
 }
 
 function ActiveTestCard({ test, fetcher }: { test: TestData; fetcher: ReturnType<typeof useFetcher> }) {
-  const typeCfg = TEST_TYPE_COLORS[test.testType] ?? { color: "#6b7280", bg: "#f3f4f6" };
+  const typePill = TEST_TYPE_PILL[test.testType] ?? "cq-pill cq-pill-gray";
   const totalImpressions = test.impressionsA + test.impressionsB;
   const daysSinceStart = Math.max(1, Math.ceil((Date.now() - new Date(test.startedAt).getTime()) / (1000 * 60 * 60 * 24)));
   const dailyRate = totalImpressions / daysSinceStart;
 
   return (
-    <div style={{ ...card, marginBottom: 16 }}>
+    <div className="cq-glass cq-anim" style={{ animationDelay: ".09s" }}>
       {/* Top color bar */}
-      <div style={{ height: 3, background: "linear-gradient(90deg, #6366f1, #8b5cf6)" }} />
+      <div className="cq-accent-bar" />
 
       {/* Header */}
-      <div style={{ padding: "16px 20px", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div className="cq-glass-head" style={{ justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>{test.name}</span>
-          <span style={{
-            padding: "2px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600,
-            color: typeCfg.color, backgroundColor: typeCfg.bg,
-          }}>
+          <span style={{ fontSize: 15, fontWeight: 600, color: COLORS.dark }}>{test.name}</span>
+          <span className={typePill}>
             {TEST_TYPE_LABELS[test.testType] ?? test.testType}
           </span>
         </div>
-        <div style={{ fontSize: 11, color: "#9ca3af" }}>
+        <div style={{ fontSize: 11, color: COLORS.textMuted }}>
           Depuis le {new Date(test.startedAt).toLocaleDateString("fr-FR")}
         </div>
       </div>
 
       {/* Side-by-side variants */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
+      <div className="cq-grid-2" style={{ gap: 0 }}>
         <VariantColumn
           label="Variant A"
-          color="#6366f1"
+          color={COLORS.green}
           impressions={test.impressionsA}
           conversions={test.conversionsA}
           conversionRate={test.conversionRateA}
@@ -398,7 +485,7 @@ function ActiveTestCard({ test, fetcher }: { test: TestData; fetcher: ReturnType
         />
         <VariantColumn
           label="Variant B"
-          color="#ec4899"
+          color={COLORS.amber}
           impressions={test.impressionsB}
           conversions={test.conversionsB}
           conversionRate={test.conversionRateB}
@@ -409,53 +496,48 @@ function ActiveTestCard({ test, fetcher }: { test: TestData; fetcher: ReturnType
       </div>
 
       {/* Preview badges */}
-      <div style={{ padding: "14px 20px", borderTop: "1px solid #f3f4f6", background: "#f9fafb" }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>Apercu des variantes</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-          <BadgePreview label="Variant A" config={test.variantA} color="#6366f1" />
-          <BadgePreview label="Variant B" config={test.variantB} color="#ec4899" />
+      <div style={{ padding: "14px 24px", borderTop: "1px solid rgba(164,156,144,.08)", background: "rgba(164,156,144,.02)" }}>
+        <div className="cq-label" style={{ marginBottom: 10 }}>Aperçu des variantes</div>
+        <div className="cq-grid-2">
+          <BadgePreview label="Variant A" config={test.variantA} colorHex={COLORS.green} />
+          <BadgePreview label="Variant B" config={test.variantB} colorHex={COLORS.amber} />
         </div>
       </div>
 
-      {/* AI Recommendation + Time estimate */}
-      <div style={{ padding: "14px 20px", borderTop: "1px solid #f3f4f6", background: "#fefce8", display: "flex", alignItems: "flex-start", gap: 10 }}>
-        <span style={{ fontSize: 16, flexShrink: 0 }}>🤖</span>
+      {/* Recommendation */}
+      <div className="cq-reco">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#92400e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "#92400e", marginBottom: 4 }}>Recommandation</div>
-          <div style={{ fontSize: 12, color: "#a16207", lineHeight: 1.5 }}>
+          <div className="cq-reco-title">Recommandation</div>
+          <div className="cq-reco-text">
             {test.isSignificant
               ? `La variante ${test.recommendedWinner} est statistiquement meilleure (Z=${test.zScore.toFixed(2)}). Nous recommandons de terminer le test et d'appliquer cette variante.`
               : totalImpressions === 0
-                ? "Aucune donnee collectee. Le test est actif — les resultats apparaitront quand des visiteurs verront votre badge."
+                ? "Aucune donnée collectée. Le test est actif — les résultats apparaîtront quand des visiteurs verront votre badge."
                 : totalImpressions < 100
-                  ? `Seulement ${totalImpressions} impressions collectees. Il faut environ 500+ impressions par variante pour un resultat fiable. Continuez le test.`
-                  : `${totalImpressions} impressions collectees. ${test.conversionRateA > test.conversionRateB ? "La variante A" : "La variante B"} est en tete mais le resultat n'est pas encore significatif. Estimez encore ~${Math.max(0, Math.ceil((1000 - totalImpressions) / Math.max(1, dailyRate)))} jours.`
+                  ? `Seulement ${totalImpressions} impressions collectées. Il faut environ 500+ impressions par variante pour un résultat fiable. Continuez le test.`
+                  : `${totalImpressions} impressions collectées. ${test.conversionRateA > test.conversionRateB ? "La variante A" : "La variante B"} est en tête mais le résultat n'est pas encore significatif. Estimez encore ~${Math.max(0, Math.ceil((1000 - totalImpressions) / Math.max(1, dailyRate)))} jours.`
             }
           </div>
         </div>
       </div>
 
       {/* Significance & actions */}
-      <div style={{ padding: "14px 20px", borderTop: "1px solid #f3f4f6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ padding: "14px 24px", borderTop: "1px solid rgba(164,156,144,.08)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{
-            display: "inline-flex", alignItems: "center", gap: 6,
-            padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600,
-            color: test.isSignificant ? "#16a34a" : "#9ca3af",
-            backgroundColor: test.isSignificant ? "#dcfce7" : "#f3f4f6",
-          }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: test.isSignificant ? "#16a34a" : "#d1d5db" }} />
+          <span className={`cq-pill ${test.isSignificant ? "cq-pill-green" : "cq-pill-gray"}`}>
+            <span className={`cq-dot ${test.isSignificant ? "" : ""}`} style={{ width: 6, height: 6, background: test.isSignificant ? "#15803D" : COLORS.textFaint }} />
             {test.isSignificant ? "Significatif (95%)" : "En cours"}
           </span>
-          <span style={{ fontSize: 11, color: "#9ca3af" }}>Z = {test.zScore.toFixed(2)}</span>
+          <span className="cq-mono" style={{ fontSize: 11, color: COLORS.textMuted }}>Z = {test.zScore.toFixed(2)}</span>
           {!test.isSignificant && totalImpressions > 0 && (
-            <span style={{ fontSize: 11, color: "#d97706" }}>~{Math.max(0, Math.ceil((1000 - totalImpressions) / Math.max(1, dailyRate)))}j restants</span>
+            <span className="cq-pill cq-pill-amber" style={{ fontSize: 10 }}>~{Math.max(0, Math.ceil((1000 - totalImpressions) / Math.max(1, dailyRate)))}j restants</span>
           )}
         </div>
 
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           {test.recommendedWinner && (
-            <span style={{ fontSize: 12, fontWeight: 600, color: "#16a34a", padding: "4px 12px", borderRadius: 6, backgroundColor: "#f0fdf4" }}>
+            <span className="cq-pill cq-pill-green">
               Gagnant : Variant {test.recommendedWinner}
             </span>
           )}
@@ -463,7 +545,7 @@ function ActiveTestCard({ test, fetcher }: { test: TestData; fetcher: ReturnType
             <input type="hidden" name="intent" value="end" />
             <input type="hidden" name="testId" value={test.id} />
             <input type="hidden" name="winner" value={test.recommendedWinner ?? (test.conversionRateA >= test.conversionRateB ? "A" : "B")} />
-            <button type="submit" style={{ padding: "6px 16px", borderRadius: 8, fontSize: 12, fontWeight: 600, border: "1px solid #e5e7eb", cursor: "pointer", color: "#374151", background: "#fff", fontFamily: "inherit" }}>
+            <button type="submit" className="cq-btn cq-btn-ghost" style={{ padding: "6px 16px", fontSize: 12 }}>
               Terminer le test
             </button>
           </fetcher.Form>
@@ -484,40 +566,18 @@ function VariantColumn({ label, color, impressions, conversions, conversionRate,
   borderLeft?: boolean;
 }) {
   return (
-    <div style={{
-      padding: "20px",
-      borderLeft: borderLeft ? "1px solid #f3f4f6" : "none",
-      backgroundColor: isWinner ? "#f0fdf4" : "transparent",
-    }}>
-      <div style={{
-        display: "flex", alignItems: "center", gap: 8, marginBottom: 14,
-      }}>
-        <span style={{
-          width: 10, height: 10, borderRadius: 3,
-          backgroundColor: color,
-        }} />
-        <span style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>{label}</span>
-        {isWinner && (
-          <span style={{
-            fontSize: 10, fontWeight: 700, color: "#16a34a",
-            padding: "1px 6px", borderRadius: 4,
-            backgroundColor: "#dcfce7",
-          }}>LEADER</span>
-        )}
+    <div className={`cq-variant-col${borderLeft ? " cq-variant-col--right" : ""}${isWinner ? " cq-variant-col--winner" : ""}`}>
+      <div className="cq-variant-header">
+        <span className="cq-variant-dot" style={{ backgroundColor: color }} />
+        <span className="cq-variant-label">{label}</span>
+        {isWinner && <span className="cq-variant-leader">LEADER</span>}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+      <div className="cq-stat-grid">
         <StatCell label="Impressions" value={impressions.toLocaleString("fr-FR")} />
         <StatCell label="Conversions" value={conversions.toLocaleString("fr-FR")} />
-        <StatCell
-          label="Taux de conversion"
-          value={`${(conversionRate * 100).toFixed(2)}%`}
-          highlight
-        />
-        <StatCell
-          label="Revenue"
-          value={`${revenue.toFixed(2)} EUR`}
-        />
+        <StatCell label="Taux de conversion" value={`${(conversionRate * 100).toFixed(2)}%`} highlight />
+        <StatCell label="Revenue" value={`${revenue.toFixed(2)} EUR`} />
       </div>
     </div>
   );
@@ -526,14 +586,8 @@ function VariantColumn({ label, color, impressions, conversions, conversionRate,
 function StatCell({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
     <div>
-      <div style={{ fontSize: 10, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 2 }}>
-        {label}
-      </div>
-      <div style={{
-        fontSize: highlight ? 18 : 15, fontWeight: 700,
-        color: highlight ? "#111827" : "#374151",
-        fontVariantNumeric: "tabular-nums",
-      }}>
+      <div className="cq-stat-label">{label}</div>
+      <div className={`cq-mono ${highlight ? "cq-stat-val--lg" : "cq-stat-val"}`}>
         {value}
       </div>
     </div>
@@ -541,44 +595,36 @@ function StatCell({ label, value, highlight }: { label: string; value: string; h
 }
 
 function CompletedTestCard({ test }: { test: TestData }) {
-  const typeCfg = TEST_TYPE_COLORS[test.testType] ?? { color: "#6b7280", bg: "#f3f4f6" };
+  const typePill = TEST_TYPE_PILL[test.testType] ?? "cq-pill cq-pill-gray";
   const isWinnerA = test.winnerVariant === "A";
   const isWinnerB = test.winnerVariant === "B";
 
   return (
-    <div style={{ ...card, marginBottom: 12, opacity: 0.85 }}>
-      <div style={{ height: 3, backgroundColor: "#d1d5db" }} />
-      <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+    <div className="cq-glass cq-completed">
+      <div className="cq-completed-bar" />
+      <div style={{ padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>{test.name}</span>
-          <span style={{
-            padding: "2px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600,
-            color: typeCfg.color, backgroundColor: typeCfg.bg,
-          }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: COLORS.text }}>{test.name}</span>
+          <span className={typePill}>
             {TEST_TYPE_LABELS[test.testType] ?? test.testType}
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{
-            padding: "4px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600,
-            color: "#16a34a", backgroundColor: "#dcfce7",
-          }}>
+          <span className="cq-pill cq-pill-green">
             Gagnant : Variant {test.winnerVariant}
           </span>
-          <span style={{ fontSize: 11, color: "#9ca3af" }}>
+          <span style={{ fontSize: 11, color: COLORS.textMuted }}>
             {test.endedAt ? new Date(test.endedAt).toLocaleDateString("fr-FR") : ""}
           </span>
         </div>
       </div>
-      <div style={{
-        padding: "0 20px 14px", display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 12,
-      }}>
+      <div className="cq-completed-grid">
         <MiniStat label="Impr. A" value={test.impressionsA} highlight={isWinnerA} />
         <MiniStat label="Conv. A" value={`${(test.conversionRateA * 100).toFixed(2)}%`} highlight={isWinnerA} />
-        <MiniStat label="Rev. A" value={`${test.revenueA.toFixed(0)}EUR`} highlight={isWinnerA} />
+        <MiniStat label="Rev. A" value={`${test.revenueA.toFixed(0)} EUR`} highlight={isWinnerA} />
         <MiniStat label="Impr. B" value={test.impressionsB} highlight={isWinnerB} />
         <MiniStat label="Conv. B" value={`${(test.conversionRateB * 100).toFixed(2)}%`} highlight={isWinnerB} />
-        <MiniStat label="Rev. B" value={`${test.revenueB.toFixed(0)}EUR`} highlight={isWinnerB} />
+        <MiniStat label="Rev. B" value={`${test.revenueB.toFixed(0)} EUR`} highlight={isWinnerB} />
       </div>
     </div>
   );
@@ -586,37 +632,14 @@ function CompletedTestCard({ test }: { test: TestData }) {
 
 function MiniStat({ label, value, highlight }: { label: string; value: string | number; highlight?: boolean }) {
   return (
-    <div style={{ textAlign: "center" }}>
-      <div style={{ fontSize: 10, color: "#9ca3af", marginBottom: 2 }}>{label}</div>
-      <div style={{
-        fontSize: 13, fontWeight: 700,
-        color: highlight ? "#16a34a" : "#374151",
-        fontVariantNumeric: "tabular-nums",
-      }}>
+    <div className="cq-mini-stat">
+      <div className="cq-mini-label">{label}</div>
+      <div className={`cq-mono ${highlight ? "cq-mini-val--win" : "cq-mini-val"}`}>
         {value}
       </div>
     </div>
   );
 }
-
-// ── Shared styles ──────────────────────────────────────
-
-const labelStyle: React.CSSProperties = {
-  display: "block",
-  fontSize: 12,
-  fontWeight: 600,
-  color: "#374151",
-  marginBottom: 4,
-};
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "8px 12px",
-  borderRadius: 8,
-  border: "1px solid #d1d5db",
-  fontSize: 13,
-  boxSizing: "border-box",
-};
 
 export const headers: HeadersFunction = (headersArgs) => {
   return boundary.headers(headersArgs);

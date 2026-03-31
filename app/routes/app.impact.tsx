@@ -5,6 +5,7 @@ import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
 import { getShopImpactStats, getImpactTimeline } from "../lib/impact/impact.server";
+import { BASE_CSS, INIT_SCRIPT, COLORS } from "../lib/ui/shared-styles";
 
 // ── Loader ─────────────────────────────────────────────
 
@@ -63,12 +64,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const oceanKg = stats.ocean.totalKg;
 
   const milestones = [
-    { label: "100 kg CO2", target: 100, current: totalCarbonKg, icon: "☁️" },
-    { label: "500 kg CO2", target: 500, current: totalCarbonKg, icon: "⛈️" },
-    { label: "1 tonne CO2", target: 1000, current: totalCarbonKg, icon: "🌍" },
-    { label: "50 arbres", target: 50, current: treesPlanted, icon: "🌳" },
-    { label: "100 arbres", target: 100, current: treesPlanted, icon: "🌲" },
-    { label: "50 kg plastique", target: 50, current: oceanKg, icon: "🌊" },
+    { label: "100 kg CO₂", target: 100, current: totalCarbonKg, icon: "cloud" },
+    { label: "500 kg CO₂", target: 500, current: totalCarbonKg, icon: "cloud-heavy" },
+    { label: "1 tonne CO₂", target: 1000, current: totalCarbonKg, icon: "globe" },
+    { label: "50 arbres", target: 50, current: treesPlanted, icon: "tree" },
+    { label: "100 arbres", target: 100, current: treesPlanted, icon: "tree-alt" },
+    { label: "50 kg plastique", target: 50, current: oceanKg, icon: "wave" },
   ];
 
   const appUrl = process.env.SHOPIFY_APP_URL || "";
@@ -100,20 +101,82 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   };
 };
 
-// ── Styles ─────────────────────────────────────────────
+// ── Page CSS ─────────────────────────────────────────────
 
-const card = {
-  background: "#fff",
-  borderRadius: 16,
-  border: "1px solid #e5e7eb",
-  overflow: "hidden" as const,
-};
+const PAGE_CSS = `
+/* URL bar */
+.cq-url-bar{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(164,156,144,.04);border-radius:12px;padding:10px 14px;
+  border:1px solid rgba(164,156,144,.08);
+}
+.cq-url-text{
+  flex:1;font-family:'DM Mono',monospace;font-size:12px;color:${COLORS.text};
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
 
-const gradientCard = {
-  ...card,
-  background: "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 40%, #ffffff 100%)",
-  border: "1px solid #bbf7d0",
-};
+/* Share buttons */
+.cq-share{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;color:#fff;font-size:12px;font-weight:600;text-decoration:none;transition:opacity .2s}
+.cq-share:hover{opacity:.85}
+
+/* Counter cards */
+.cq-counter{
+  background:rgba(253,252,251,.7);backdrop-filter:blur(16px) saturate(1.3);
+  -webkit-backdrop-filter:blur(16px) saturate(1.3);
+  border:1px solid rgba(255,255,255,.6);border-radius:16px;
+  padding:20px 16px;text-align:center;
+  box-shadow:0 1px 3px rgba(44,40,37,.04),0 4px 16px rgba(44,40,37,.04);
+}
+.cq-counter-icon{font-size:24px;margin-bottom:6px}
+.cq-counter-val{font-family:'Instrument Serif',Georgia,serif;font-size:28px;line-height:1.2;letter-spacing:-.02em}
+.cq-counter-unit{font-family:'DM Mono',monospace;font-size:12px;color:${COLORS.textMuted};margin-left:2px}
+.cq-counter-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${COLORS.textMuted};margin-top:6px}
+
+/* Activity feed */
+.cq-feed-item{
+  display:flex;align-items:center;gap:12px;padding:12px 24px;
+  border-bottom:1px solid rgba(164,156,144,.05);transition:background .15s;
+}
+.cq-feed-item:last-child{border-bottom:none}
+.cq-feed-item:hover{background:rgba(74,124,89,.02)}
+.cq-feed-icon{
+  width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-size:16px;flex-shrink:0;
+}
+
+/* Chart bar */
+.cq-chart-bar{
+  width:100%;max-width:40px;border-radius:6px 6px 0 0;
+  background:linear-gradient(180deg,${COLORS.green},#6AA87A);
+  transition:height .6s cubic-bezier(.4,0,.2,1);position:relative;
+}
+
+/* Milestone card */
+.cq-milestone{
+  text-align:center;padding:18px 12px;border-radius:16px;
+  background:rgba(253,252,251,.5);border:1px solid rgba(164,156,144,.08);
+  transition:all .2s ease;
+}
+.cq-milestone:hover{border-color:rgba(74,124,89,.15);background:rgba(253,252,251,.8)}
+.cq-milestone-done{background:rgba(74,124,89,.04);border-color:rgba(74,124,89,.12)}
+
+/* Bottom stats */
+.cq-bottom-stats{display:flex;justify-content:center;gap:32px;margin-top:20px;padding-top:16px;border-top:1px solid rgba(164,156,144,.06)}
+`;
+
+// ── Milestone SVG icons ──────────────────────────────────
+function milestoneIconSvg(type: string, done: boolean): string {
+  const c = done ? COLORS.green : COLORS.textMuted;
+  const icons: Record<string, string> = {
+    cloud: `<svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M18 10a4 4 0 0 1 0 8H7A5 5 0 1 1 7.3 8.1 4 4 0 0 1 18 10z" stroke="${c}" stroke-width="1.5"/></svg>`,
+    "cloud-heavy": `<svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M18 10a4 4 0 0 1 0 8H7A5 5 0 1 1 7.3 8.1 4 4 0 0 1 18 10z" stroke="${c}" stroke-width="2"/><path d="M13 18v2m-4-2v3m8-3v1" stroke="${c}" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+    globe: `<svg width="20" height="20" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="${c}" stroke-width="1.5"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z" stroke="${c}" stroke-width="1.5"/></svg>`,
+    tree: `<svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M12 22V8m0 0l-4 4m4-4 4 4M7 3l5 5 5-5" stroke="${c}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    "tree-alt": `<svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M12 22v-7m-4 3h8l-4-6-4 6zm0-6h8l-4-6-4 6z" stroke="${c}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    wave: `<svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M2 12c1.3-1.3 2.7-2 4-2s2.7.7 4 2 2.7 2 4 2 2.7-.7 4-2" stroke="${c}" stroke-width="1.5" stroke-linecap="round"/><path d="M2 17c1.3-1.3 2.7-2 4-2s2.7.7 4 2 2.7 2 4 2 2.7-.7 4-2" stroke="${c}" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  };
+  return icons[type] ?? icons.cloud;
+}
 
 // ── Component ──────────────────────────────────────────
 
@@ -130,316 +193,291 @@ export default function ImpactPortal() {
 
   if (!shop || !stats) {
     return (
-      <s-page heading="Portail d'Impact Public">
-        <s-section>
-          <s-paragraph>Installez d&#39;abord l&#39;app depuis le dashboard.</s-paragraph>
-        </s-section>
-      </s-page>
+      <>
+        <style dangerouslySetInnerHTML={{ __html: BASE_CSS + PAGE_CSS }} />
+        <script dangerouslySetInnerHTML={{ __html: INIT_SCRIPT }} />
+        <div className="cq-page">
+          <div className="cq-glass">
+            <div className="cq-empty">
+              <div className="cq-empty-icon">
+                <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+                  <path d="M12 22c5.5 0 10-4.5 10-10S17.5 2 12 2 2 6.5 2 12s4.5 10 10 10z" stroke={COLORS.textMuted} strokeWidth="1.5"/>
+                  <path d="M12 8v4m0 4h.01" stroke={COLORS.textMuted} strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              </div>
+              <div className="cq-empty-t">Portail non disponible</div>
+              <div className="cq-empty-d">Installez d&apos;abord l&apos;app depuis le dashboard.</div>
+            </div>
+          </div>
+        </div>
+      </>
     );
   }
 
   const maxTrend = Math.max(...trend.map((t) => t.offsetKg), 1);
 
   return (
-    <s-page heading="Portail d'Impact Public">
-      {/* ── Public URL bar ── */}
-      <div style={{ ...card, padding: 20, marginBottom: 20 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-          <div style={{
-            width: 40, height: 40, borderRadius: 10,
-            background: "linear-gradient(135deg, #16a34a, #15803d)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            color: "#fff", fontSize: 20,
-          }}>
-            {"\uD83C\uDF10"}
-          </div>
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>URL publique du portail</div>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>Partagez cette page pour montrer votre impact</div>
-          </div>
-        </div>
-        <div style={{
-          display: "flex", alignItems: "center", gap: 8,
-          background: "#f9fafb", borderRadius: 10, padding: "10px 14px",
-          border: "1px solid #e5e7eb",
-        }}>
-          <div style={{
-            flex: 1, fontSize: 13, color: "#374151", fontFamily: "monospace",
-            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-          }}>
-            {portalUrl}
-          </div>
-          <button
-            onClick={copyUrl}
-            style={{
-              padding: "8px 16px", borderRadius: 8,
-              background: copied ? "#16a34a" : "linear-gradient(135deg, #16a34a, #15803d)",
-              color: "#fff", fontSize: 13, fontWeight: 600,
-              border: "none", cursor: "pointer",
-              transition: "all 0.2s",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {copied ? "Copie !" : "Copier"}
-          </button>
+    <>
+      <style dangerouslySetInnerHTML={{ __html: BASE_CSS + PAGE_CSS }} />
+      <script dangerouslySetInnerHTML={{ __html: INIT_SCRIPT }} />
+
+      <div className="cq-page">
+        {/* Page header */}
+        <div style={{ marginBottom: 24 }}>
+          <h1 className="cq-display" style={{ fontSize: 28, color: COLORS.dark }}>
+            Portail d&apos;Impact Public
+          </h1>
+          <p style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 4 }}>
+            Partagez votre engagement environnemental avec vos clients
+          </p>
         </div>
 
-        {/* Share buttons */}
-        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-          <ShareButton
-            label="Twitter"
-            color="#1DA1F2"
-            href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Decouvrez notre impact environnemental !`)}&url=${encodeURIComponent(portalUrl)}`}
-          />
-          <ShareButton
-            label="LinkedIn"
-            color="#0077B5"
-            href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(portalUrl)}`}
-          />
-          <ShareButton
-            label="Facebook"
-            color="#1877F2"
-            href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(portalUrl)}`}
-          />
-        </div>
-      </div>
-
-      {/* ── Hero impact counters ── */}
-      <div style={{ ...gradientCard, padding: "28px 24px", marginBottom: 20 }}>
-        <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <div style={{ fontSize: 32, marginBottom: 6 }}>{"\uD83C\uDF31"}</div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: "#111827" }}>Impact de {shop.name}</div>
-          <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>Notre engagement pour la planete</div>
-        </div>
-
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-          gap: 12,
-        }}>
-          <AnimatedCounter
-            icon={"\u2601\uFE0F"}
-            value={stats.totalCarbonKg}
-            suffix=" kg"
-            label="CO2 compense"
-            color="#16a34a"
-          />
-          <AnimatedCounter
-            icon={"\uD83C\uDF33"}
-            value={stats.treesPlanted}
-            suffix=""
-            label="Arbres plantes"
-            color="#15803d"
-          />
-          <AnimatedCounter
-            icon={"\uD83C\uDF0A"}
-            value={stats.oceanPlasticKg}
-            suffix=" kg"
-            label="Plastique ocean"
-            color="#0891b2"
-          />
-          <AnimatedCounter
-            icon={"\uD83D\uDCDC"}
-            value={certificates}
-            suffix=""
-            label="Certificats"
-            color="#7c3aed"
-          />
-        </div>
-
-        <div style={{
-          display: "flex", justifyContent: "center", gap: 24,
-          marginTop: 20, paddingTop: 16,
-          borderTop: "1px solid #dcfce7",
-        }}>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "#111827" }}>{stats.totalOrders}</div>
-            <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Commandes</div>
-          </div>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "#111827" }}>{stats.totalInvested.toFixed(2)} EUR</div>
-            <div style={{ fontSize: 11, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Investi</div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Recent activity feed ── */}
-      <div style={{ ...card, marginBottom: 20 }}>
-        <div style={{
-          padding: "16px 20px", borderBottom: "1px solid #f3f4f6",
-          display: "flex", alignItems: "center", gap: 8,
-        }}>
-          <span style={{ fontSize: 16 }}>{"\u26A1"}</span>
-          <span style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>Activite recente</span>
-        </div>
-        <div style={{ padding: "4px 0", maxHeight: 320, overflowY: "auto" }}>
-          {timeline.length === 0 && (
-            <div style={{ padding: "24px 20px", textAlign: "center", color: "#9ca3af", fontSize: 13 }}>
-              Aucune activite pour le moment
+        {/* Public URL card */}
+        <div className="cq-glass cq-anim">
+          <div className="cq-glass-head">
+            <div className="cq-glass-icon" style={{ background: `linear-gradient(135deg, ${COLORS.green}, #3A6E48)` }}>
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" stroke="#fff" strokeWidth="1.5"/>
+                <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z" stroke="#fff" strokeWidth="1.5"/>
+              </svg>
             </div>
-          )}
-          {timeline.slice(0, 10).map((item, i) => {
-            const typeInfo = getTypeInfo(item.type);
-            const timeAgo = formatTimeAgo(item.date);
-            const cities = ["Paris", "Lyon", "Marseille", "Bordeaux", "Toulouse", "Nantes", "Lille", "Strasbourg", "Nice", "Rennes"];
-            const names = ["Sarah", "Thomas", "Marie", "Lucas", "Emma", "Hugo", "Lea", "Jules", "Chloe", "Louis"];
-            const city = cities[i % cities.length];
-            const name = names[i % names.length];
-
-            return (
-              <div
-                key={item.id}
-                style={{
-                  display: "flex", alignItems: "center", gap: 12,
-                  padding: "12px 20px",
-                  borderBottom: i < 9 ? "1px solid #fafafa" : "none",
-                }}
-              >
-                <div style={{
-                  width: 36, height: 36, borderRadius: 10,
-                  backgroundColor: typeInfo.bg, color: typeInfo.color,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 16, flexShrink: 0,
-                }}>
-                  {typeInfo.icon}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, color: "#374151" }}>
-                    <strong>{name}</strong> de <strong>{city}</strong> a {typeInfo.verb}{" "}
-                    <strong style={{ color: typeInfo.color }}>
-                      {item.quantity < 1 ? item.quantity.toFixed(2) : item.quantity.toFixed(1)} {typeInfo.unit}
-                    </strong>
-                  </div>
-                  <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{timeAgo}</div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ── Monthly evolution chart ── */}
-      {trend.length > 0 && (
-        <div style={{ ...card, marginBottom: 20 }}>
-          <div style={{
-            padding: "16px 20px", borderBottom: "1px solid #f3f4f6",
-            display: "flex", alignItems: "center", gap: 8,
-          }}>
-            <span style={{ fontSize: 16 }}>{"\uD83D\uDCC8"}</span>
-            <span style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>Evolution mensuelle</span>
+            <div>
+              <div className="cq-glass-title">URL publique du portail</div>
+              <div className="cq-glass-desc">Partagez cette page pour montrer votre impact</div>
+            </div>
           </div>
-          <div style={{ padding: 20 }}>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 140 }}>
-              {trend.map((m) => {
-                const h = (m.offsetKg / maxTrend) * 100;
-                return (
-                  <div
-                    key={m.month}
-                    style={{
-                      flex: 1, display: "flex", flexDirection: "column",
-                      alignItems: "center", gap: 4,
-                    }}
-                  >
-                    <span style={{ fontSize: 10, color: "#6b7280", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
-                      {m.offsetKg.toFixed(0)}
-                    </span>
-                    <div style={{
-                      width: "100%", maxWidth: 40, height: `${Math.max(h, 3)}%`,
-                      background: "linear-gradient(180deg, #16a34a, #22c55e)",
-                      borderRadius: "6px 6px 0 0",
-                      transition: "height 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
-                      position: "relative",
-                    }}>
-                      {m.treesPlanted > 0 && (
-                        <div style={{
-                          position: "absolute", bottom: 0, left: 0, right: 0,
-                          height: `${Math.min((m.treesPlanted / Math.max(...trend.map(t => t.treesPlanted), 1)) * 50, 100)}%`,
-                          background: "rgba(255,255,255,0.3)",
-                          borderRadius: "0 0 0 0",
-                        }} />
-                      )}
+          <div className="cq-glass-body">
+            <div className="cq-url-bar">
+              <div className="cq-url-text">{portalUrl}</div>
+              <button
+                className={`cq-btn ${copied ? "cq-btn-green" : "cq-btn-dark"}`}
+                onClick={copyUrl}
+                style={{ padding: "8px 18px" }}
+              >
+                {copied ? "Copié !" : "Copier"}
+              </button>
+            </div>
+
+            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+              <a className="cq-share" style={{ background: "#1DA1F2" }}
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("Découvrez notre impact environnemental !")}&url=${encodeURIComponent(portalUrl)}`}
+                target="_blank" rel="noopener noreferrer">Twitter</a>
+              <a className="cq-share" style={{ background: "#0077B5" }}
+                href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(portalUrl)}`}
+                target="_blank" rel="noopener noreferrer">LinkedIn</a>
+              <a className="cq-share" style={{ background: "#1877F2" }}
+                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(portalUrl)}`}
+                target="_blank" rel="noopener noreferrer">Facebook</a>
+            </div>
+          </div>
+        </div>
+
+        {/* Hero impact counters */}
+        <div className="cq-glass cq-anim" style={{ animationDelay: ".06s" }}>
+          <div className="cq-glass-body" style={{ textAlign: "center" }}>
+            <div style={{ marginBottom: 20 }}>
+              <svg width="40" height="40" fill="none" viewBox="0 0 24 24" style={{ marginBottom: 8 }}>
+                <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c1 0 0-5 2-7s7-1 7-2c0-5.5-4.5-10-9-10z" stroke={COLORS.green} strokeWidth="1.5"/>
+              </svg>
+              <div style={{ fontSize: 22, fontWeight: 700, color: COLORS.dark }}>
+                Impact de {shop.name}
+              </div>
+              <div style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 4 }}>
+                Notre engagement pour la planète
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
+              <AnimatedCounter
+                iconSvg={`<svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M18 10a4 4 0 0 1 0 8H7A5 5 0 1 1 7.3 8.1 4 4 0 0 1 18 10z" stroke="${COLORS.green}" stroke-width="1.5"/></svg>`}
+                value={stats.totalCarbonKg}
+                suffix=" kgCO₂e"
+                label="CO₂ compensé"
+                color={COLORS.green}
+              />
+              <AnimatedCounter
+                iconSvg={`<svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M12 22V8m0 0l-4 4m4-4 4 4M7 3l5 5 5-5" stroke="#15803D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`}
+                value={stats.treesPlanted}
+                suffix=""
+                label="Arbres plantés"
+                color="#15803D"
+              />
+              <AnimatedCounter
+                iconSvg={`<svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M2 12c1.3-1.3 2.7-2 4-2s2.7.7 4 2 2.7 2 4 2 2.7-.7 4-2" stroke="${COLORS.teal}" stroke-width="1.5" stroke-linecap="round"/><path d="M2 17c1.3-1.3 2.7-2 4-2s2.7.7 4 2 2.7 2 4 2 2.7-.7 4-2" stroke="${COLORS.teal}" stroke-width="1.5" stroke-linecap="round"/></svg>`}
+                value={stats.oceanPlasticKg}
+                suffix=" kg"
+                label="Plastique océan"
+                color={COLORS.teal}
+              />
+              <AnimatedCounter
+                iconSvg={`<svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="${COLORS.green}" stroke-width="1.5"/><path d="M14 2v6h6" stroke="${COLORS.green}" stroke-width="1.5"/></svg>`}
+                value={certificates}
+                suffix=""
+                label="Certificats"
+                color={COLORS.green}
+              />
+            </div>
+
+            <div className="cq-bottom-stats">
+              <div style={{ textAlign: "center" }}>
+                <div className="cq-mono" style={{ fontSize: 20, fontWeight: 700, color: COLORS.dark }}>{stats.totalOrders}</div>
+                <div className="cq-label" style={{ marginTop: 2 }}>Commandes</div>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <div className="cq-mono" style={{ fontSize: 20, fontWeight: 700, color: COLORS.dark }}>{stats.totalInvested.toFixed(2)} EUR</div>
+                <div className="cq-label" style={{ marginTop: 2 }}>Investi</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Recent activity feed */}
+        <div className="cq-glass cq-anim" style={{ animationDelay: ".09s" }}>
+          <div className="cq-glass-head">
+            <div className="cq-glass-icon" style={{ background: COLORS.amberLight }}>
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke={COLORS.amber} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <div className="cq-glass-title">Activité récente</div>
+          </div>
+          <div style={{ maxHeight: 320, overflowY: "auto" }}>
+            {timeline.length === 0 && (
+              <div className="cq-empty" style={{ padding: "32px 24px" }}>
+                <div className="cq-empty-d">Aucune activité pour le moment</div>
+              </div>
+            )}
+            {timeline.slice(0, 10).map((item, i) => {
+              const typeInfo = getTypeInfo(item.type);
+              const timeAgo = formatTimeAgo(item.date);
+              const cities = ["Paris", "Lyon", "Marseille", "Bordeaux", "Toulouse", "Nantes", "Lille", "Strasbourg", "Nice", "Rennes"];
+              const names = ["Sarah", "Thomas", "Marie", "Lucas", "Emma", "Hugo", "Léa", "Jules", "Chloé", "Louis"];
+              const city = cities[i % cities.length];
+              const name = names[i % names.length];
+
+              return (
+                <div key={item.id} className="cq-feed-item">
+                  <div className="cq-feed-icon" style={{ backgroundColor: typeInfo.bg }}>
+                    <span dangerouslySetInnerHTML={{ __html: typeInfo.iconSvg }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, color: COLORS.text }}>
+                      <strong>{name}</strong> de <strong>{city}</strong> a {typeInfo.verb}{" "}
+                      <strong className="cq-mono" style={{ color: typeInfo.color }}>
+                        {item.quantity < 1 ? item.quantity.toFixed(2) : item.quantity.toFixed(1)} {typeInfo.unit}
+                      </strong>
                     </div>
-                    <span style={{ fontSize: 10, color: "#9ca3af" }}>{m.month.slice(5)}</span>
+                    <div style={{ fontSize: 11, color: COLORS.textFaint, marginTop: 2 }}>{timeAgo}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Monthly evolution chart */}
+        {trend.length > 0 && (
+          <div className="cq-glass cq-anim" style={{ animationDelay: ".12s" }}>
+            <div className="cq-glass-head">
+              <div className="cq-glass-icon" style={{ background: COLORS.greenLight }}>
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                  <path d="M3 3v18h18M7 17l4-4 4 4 5-6" stroke={COLORS.green} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <div className="cq-glass-title">Évolution mensuelle</div>
+            </div>
+            <div className="cq-glass-body">
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 140 }}>
+                {trend.map((m) => {
+                  const h = (m.offsetKg / maxTrend) * 100;
+                  return (
+                    <div key={m.month} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                      <span className="cq-mono" style={{ fontSize: 10, color: COLORS.textMuted }}>
+                        {m.offsetKg.toFixed(0)}
+                      </span>
+                      <div className="cq-chart-bar" style={{ height: `${Math.max(h, 3)}%` }}>
+                        {m.treesPlanted > 0 && (
+                          <div style={{
+                            position: "absolute", bottom: 0, left: 0, right: 0,
+                            height: `${Math.min((m.treesPlanted / Math.max(...trend.map(t => t.treesPlanted), 1)) * 50, 100)}%`,
+                            background: "rgba(255,255,255,0.3)", borderRadius: "0 0 0 0",
+                          }} />
+                        )}
+                      </div>
+                      <span style={{ fontSize: 10, color: COLORS.textFaint }}>{m.month.slice(5)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ display: "flex", justifyContent: "center", gap: 16, marginTop: 14, fontSize: 11, color: COLORS.textMuted }}>
+                <span>
+                  <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: COLORS.green, marginRight: 4 }} />
+                  CO₂ compensé (kgCO₂e)
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Milestones */}
+        <div className="cq-glass cq-anim" style={{ animationDelay: ".15s" }}>
+          <div className="cq-glass-head">
+            <div className="cq-glass-icon" style={{ background: COLORS.amberLight }}>
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                <path d="M6 9H4.5A2.5 2.5 0 0 1 2 6.5 2.5 2.5 0 0 1 4.5 4H6m12 5h1.5A2.5 2.5 0 0 0 22 6.5 2.5 2.5 0 0 0 19.5 4H18M8 21h8m-4-4v4m-4-8a4 4 0 0 1-4-4V4h16v5a4 4 0 0 1-4 4" stroke={COLORS.amber} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <div className="cq-glass-title">Jalons</div>
+          </div>
+          <div className="cq-glass-body">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 }}>
+              {milestones.map((m) => {
+                const pct = Math.min((m.current / m.target) * 100, 100);
+                const reached = pct >= 100;
+                return (
+                  <div key={m.label} className={`cq-milestone${reached ? " cq-milestone-done" : ""}`}>
+                    <div style={{ position: "relative", width: 64, height: 64, margin: "0 auto 10px" }}>
+                      <svg viewBox="0 0 64 64" style={{ width: 64, height: 64, transform: "rotate(-90deg)" }}>
+                        <circle cx="32" cy="32" r="28" fill="none" stroke="rgba(164,156,144,.08)" strokeWidth="4" />
+                        <circle
+                          cx="32" cy="32" r="28" fill="none"
+                          stroke={reached ? COLORS.green : COLORS.textFaint}
+                          strokeWidth="4"
+                          strokeDasharray={`${(pct / 100) * 175.93} 175.93`}
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {reached ? (
+                          <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                            <path d="M20 6L9 17l-5-5" stroke={COLORS.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        ) : (
+                          <span dangerouslySetInnerHTML={{ __html: milestoneIconSvg(m.icon, reached) }} />
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: reached ? COLORS.green : COLORS.dark }}>
+                      {m.label}
+                    </div>
+                    <div style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 4 }}>
+                      {reached ? "Atteint !" : `${Math.round(pct)}% — ${formatNum(m.current)}/${formatNum(m.target)}`}
+                    </div>
                   </div>
                 );
               })}
             </div>
-            <div style={{
-              display: "flex", justifyContent: "center", gap: 16,
-              marginTop: 14, fontSize: 11, color: "#6b7280",
-            }}>
-              <span><span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: "#16a34a", marginRight: 4 }} /> CO2 compense (kg)</span>
-            </div>
           </div>
         </div>
-      )}
-
-      {/* ── Milestones ── */}
-      <div style={{ ...card, marginBottom: 20 }}>
-        <div style={{
-          padding: "16px 20px", borderBottom: "1px solid #f3f4f6",
-          display: "flex", alignItems: "center", gap: 8,
-        }}>
-          <span style={{ fontSize: 16 }}>{"\uD83C\uDFC6"}</span>
-          <span style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>Jalons</span>
-        </div>
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-          gap: 16, padding: 20,
-        }}>
-          {milestones.map((m) => {
-            const pct = Math.min((m.current / m.target) * 100, 100);
-            const reached = pct >= 100;
-            return (
-              <div
-                key={m.label}
-                style={{
-                  textAlign: "center", padding: 16,
-                  borderRadius: 12,
-                  background: reached ? "#f0fdf4" : "#f9fafb",
-                  border: reached ? "1px solid #bbf7d0" : "1px solid #e5e7eb",
-                }}
-              >
-                {/* Progress circle */}
-                <div style={{ position: "relative", width: 64, height: 64, margin: "0 auto 10px" }}>
-                  <svg viewBox="0 0 64 64" style={{ width: 64, height: 64, transform: "rotate(-90deg)" }}>
-                    <circle cx="32" cy="32" r="28" fill="none" stroke="#e5e7eb" strokeWidth="4" />
-                    <circle
-                      cx="32" cy="32" r="28" fill="none"
-                      stroke={reached ? "#16a34a" : "#9ca3af"}
-                      strokeWidth="4"
-                      strokeDasharray={`${(pct / 100) * 175.93} 175.93`}
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <div style={{
-                    position: "absolute", inset: 0,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 20, transform: "rotate(0deg)",
-                  }}>
-                    {reached ? "\u2705" : m.icon}
-                  </div>
-                </div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: reached ? "#16a34a" : "#374151" }}>
-                  {m.label}
-                </div>
-                <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
-                  {reached ? "Atteint !" : `${Math.round(pct)}% — ${formatNum(m.current)}/${formatNum(m.target)}`}
-                </div>
-              </div>
-            );
-          })}
-        </div>
       </div>
-    </s-page>
+    </>
   );
 }
 
 // ── Sub-components ─────────────────────────────────────
 
-function AnimatedCounter({ icon, value, suffix, label, color }: {
-  icon: string; value: number; suffix: string; label: string; color: string;
+function AnimatedCounter({ iconSvg, value, suffix, label, color }: {
+  iconSvg: string; value: number; suffix: string; label: string; color: string;
 }) {
   const [display, setDisplay] = useState(0);
 
@@ -449,7 +487,6 @@ function AnimatedCounter({ icon, value, suffix, label, color }: {
     const animate = () => {
       const elapsed = Date.now() - start;
       const progress = Math.min(elapsed / duration, 1);
-      // Ease out cubic
       const eased = 1 - Math.pow(1 - progress, 3);
       setDisplay(value * eased);
       if (progress < 1) requestAnimationFrame(animate);
@@ -458,48 +495,13 @@ function AnimatedCounter({ icon, value, suffix, label, color }: {
   }, [value]);
 
   return (
-    <div style={{
-      background: "rgba(255,255,255,0.8)",
-      borderRadius: 14, padding: "18px 14px",
-      textAlign: "center", border: "1px solid #dcfce7",
-      backdropFilter: "blur(4px)",
-    }}>
-      <div style={{ fontSize: 26, marginBottom: 4 }}>{icon}</div>
-      <div style={{
-        fontSize: 28, fontWeight: 800, color,
-        fontVariantNumeric: "tabular-nums", lineHeight: 1.2,
-      }}>
-        {formatNum(display)}{suffix}
+    <div className="cq-counter">
+      <div className="cq-counter-icon" dangerouslySetInnerHTML={{ __html: iconSvg }} />
+      <div className="cq-counter-val" style={{ color }}>
+        {formatNum(display)}<span className="cq-counter-unit">{suffix}</span>
       </div>
-      <div style={{
-        fontSize: 11, color: "#6b7280", fontWeight: 500,
-        textTransform: "uppercase", letterSpacing: "0.03em", marginTop: 4,
-      }}>
-        {label}
-      </div>
+      <div className="cq-counter-label">{label}</div>
     </div>
-  );
-}
-
-function ShareButton({ label, color, href }: { label: string; color: string; href: string }) {
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      style={{
-        display: "inline-flex", alignItems: "center", gap: 6,
-        padding: "8px 14px", borderRadius: 8,
-        backgroundColor: color, color: "#fff",
-        fontSize: 12, fontWeight: 600,
-        textDecoration: "none",
-        transition: "opacity 0.2s",
-      }}
-      onMouseEnter={(e) => { (e.target as HTMLElement).style.opacity = "0.85"; }}
-      onMouseLeave={(e) => { (e.target as HTMLElement).style.opacity = "1"; }}
-    >
-      {label}
-    </a>
   );
 }
 
@@ -514,13 +516,25 @@ function formatNum(n: number): string {
 function getTypeInfo(type: string) {
   switch (type) {
     case "CARBON":
-      return { icon: "\u2601\uFE0F", color: "#16a34a", bg: "#dcfce7", verb: "compense", unit: "kg CO2" };
+      return {
+        iconSvg: `<svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M18 10a4 4 0 0 1 0 8H7A5 5 0 1 1 7.3 8.1 4 4 0 0 1 18 10z" stroke="${COLORS.green}" stroke-width="1.5"/></svg>`,
+        color: COLORS.green, bg: "rgba(74,124,89,.08)", verb: "compensé", unit: "kgCO₂e",
+      };
     case "TREE":
-      return { icon: "\uD83C\uDF33", color: "#15803d", bg: "#d1fae5", verb: "plante", unit: "arbre(s)" };
+      return {
+        iconSvg: `<svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 22V8m0 0l-4 4m4-4 4 4M7 3l5 5 5-5" stroke="#15803D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+        color: "#15803D", bg: "rgba(21,128,61,.06)", verb: "planté", unit: "arbre(s)",
+      };
     case "OCEAN":
-      return { icon: "\uD83C\uDF0A", color: "#0891b2", bg: "#cffafe", verb: "retire", unit: "kg plastique" };
+      return {
+        iconSvg: `<svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M2 12c1.3-1.3 2.7-2 4-2s2.7.7 4 2 2.7 2 4 2 2.7-.7 4-2" stroke="${COLORS.teal}" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+        color: COLORS.teal, bg: "rgba(13,139,126,.06)", verb: "retiré", unit: "kg plastique",
+      };
     default:
-      return { icon: "\u2728", color: "#6b7280", bg: "#f3f4f6", verb: "contribue", unit: "" };
+      return {
+        iconSvg: `<svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.3L12 16.7l-6.2 4.5 2.4-7.3L2 9.4h7.6L12 2z" stroke="${COLORS.textMuted}" stroke-width="1.5"/></svg>`,
+        color: COLORS.textMuted, bg: "rgba(164,156,144,.06)", verb: "contribué", unit: "",
+      };
   }
 }
 
@@ -529,7 +543,7 @@ function formatTimeAgo(dateStr: string): string {
   const date = new Date(dateStr).getTime();
   const diff = now - date;
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "A l'instant";
+  if (mins < 1) return "À l'instant";
   if (mins < 60) return `Il y a ${mins} min`;
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `Il y a ${hours}h`;
