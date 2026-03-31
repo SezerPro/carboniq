@@ -18,12 +18,13 @@ import { BASE_CSS, INIT_SCRIPT, COLORS } from "../lib/ui/shared-styles";
 // -- Loader --
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  try {
+    const { session } = await authenticate.admin(request);
 
-  const shop = await db.shop.findUnique({
-    where: { shopDomain: session.shop },
-  });
-  if (!shop) return { tips: [], progress: null, goal: null };
+    const shop = await db.shop.findUnique({
+      where: { shopDomain: session.shop },
+    });
+    if (!shop) return { tips: [], progress: null, goal: null };
 
   let tips = await getReductionTips(shop.id);
 
@@ -149,6 +150,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     },
     goal: goalData,
   };
+  } catch (error) {
+    console.error("[app.reduction] Loader error:", error);
+    return { error: true, message: "Erreur de chargement" };
+  }
 };
 
 // -- Action --
@@ -341,7 +346,9 @@ const CATEGORY_SVGS: Record<string, string> = {
 // -- Component --
 
 export default function Reduction() {
-  const { tips, progress, goal } = useLoaderData<typeof loader>();
+  const data = useLoaderData<typeof loader>();
+  if ("error" in data) return <div style={{ padding: 40, textAlign: "center", color: "#9C9488" }}>Erreur de chargement. Rechargez la page.</div>;
+  const { tips, progress, goal } = data;
   const fetcher = useFetcher<typeof action>();
   const goalFetcher = useFetcher<typeof action>();
   const isRegenerating =

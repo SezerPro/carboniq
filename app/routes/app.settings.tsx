@@ -8,37 +8,43 @@ import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
 import { encrypt } from "../lib/security/api-auth.server";
+import { BASE_CSS, INIT_SCRIPT, COLORS } from "../lib/ui/shared-styles";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  try {
+    const { session } = await authenticate.admin(request);
 
-  const shop = await db.shop.findUnique({ where: { shopDomain: session.shop } });
-  if (!shop) return { shop: null };
+    const shop = await db.shop.findUnique({ where: { shopDomain: session.shop } });
+    if (!shop) return { shop: null };
 
-  return {
-    shop: {
-      shopDomain: shop.shopDomain,
-      name: shop.name,
-      email: shop.email,
-      plan: shop.plan,
-      planStatus: shop.planStatus,
-      badgeStyle: shop.badgeStyle,
-      badgeColor: shop.badgeColor,
-      badgePosition: shop.badgePosition,
-      showLabel: shop.showLabel,
-      showComparison: shop.showComparison,
-      showSocialProof: shop.showSocialProof,
-      enableOffset: shop.enableOffset,
-      enableTrees: shop.enableTrees,
-      enableOcean: shop.enableOcean,
-      treeCostEur: shop.treeCostEur,
-      oceanCostEur: shop.oceanCostEur,
-      carbonCostEur: shop.carbonCostEur,
-      klaviyoApiKey: shop.klaviyoApiKey ? "••••••••" : null,
-      klaviyoListId: shop.klaviyoListId,
-      locale: shop.locale,
-    },
-  };
+    return {
+      shop: {
+        shopDomain: shop.shopDomain,
+        name: shop.name,
+        email: shop.email,
+        plan: shop.plan,
+        planStatus: shop.planStatus,
+        badgeStyle: shop.badgeStyle,
+        badgeColor: shop.badgeColor,
+        badgePosition: shop.badgePosition,
+        showLabel: shop.showLabel,
+        showComparison: shop.showComparison,
+        showSocialProof: shop.showSocialProof,
+        enableOffset: shop.enableOffset,
+        enableTrees: shop.enableTrees,
+        enableOcean: shop.enableOcean,
+        treeCostEur: shop.treeCostEur,
+        oceanCostEur: shop.oceanCostEur,
+        carbonCostEur: shop.carbonCostEur,
+        klaviyoApiKey: shop.klaviyoApiKey ? "••••••••" : null,
+        klaviyoListId: shop.klaviyoListId,
+        locale: shop.locale,
+      },
+    };
+  } catch (error) {
+    console.error("[app.settings] Loader error:", error);
+    return { error: true, message: "Erreur de chargement" };
+  }
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -98,7 +104,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 // ── CSS ──
 
-const CSS = `
+const PAGE_CSS = `
 .cs *{box-sizing:border-box;margin:0;padding:0}
 .cs{
   font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
@@ -248,32 +254,17 @@ export default function Settings() {
 
   const isSaving = fetcher.state !== "idle";
 
-  // Polaris overrides + fonts
-  const initScript = `
-    (function(){
-      if(document.getElementById('cs-override'))return;
-      var s=document.createElement('style');s.id='cs-override';
-      s.textContent='html,body,#app,[data-shopify-app-init]{background:#F5F0EB!important}.Polaris-Frame__Main,.Polaris-Frame{background:#F5F0EB!important}';
-      document.head.appendChild(s);
-      if(!document.getElementById('cs-fonts')){
-        var l=document.createElement('link');l.id='cs-fonts';l.rel='stylesheet';
-        l.href='https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap';
-        document.head.appendChild(l);
-      }
-    })();
-  `;
-
   return (
     <s-page heading="Paramètres">
-      <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      <script dangerouslySetInnerHTML={{ __html: initScript }} />
+      <style dangerouslySetInnerHTML={{ __html: BASE_CSS + PAGE_CSS }} />
+      <script dangerouslySetInnerHTML={{ __html: INIT_SCRIPT }} />
 
       <div className="cs">
 
         {/* ── Language ── */}
         <div className="cs-card cs-anim">
           <div className="cs-card-head">
-            <div className="cs-card-icon" style={{ background: "rgba(13,139,126,.08)", color: "#0D8B7E" }}>
+            <div className="cs-card-icon" style={{ background: COLORS.tealLight, color: COLORS.teal }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
             </div>
             <div>
@@ -306,7 +297,7 @@ export default function Settings() {
         {/* ── Badge ── */}
         <div className="cs-card cs-anim">
           <div className="cs-card-head">
-            <div className="cs-card-icon" style={{ background: "rgba(74,124,89,.08)", color: "#4A7C59" }}>
+            <div className="cs-card-icon" style={{ background: COLORS.greenLight, color: COLORS.green }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
             </div>
             <div>
@@ -371,7 +362,7 @@ export default function Settings() {
         {/* ── Klaviyo ── */}
         <div className="cs-card cs-anim">
           <div className="cs-card-head">
-            <div className="cs-card-icon" style={{ background: "rgba(59,111,192,.08)", color: "#3B6FC0" }}>
+            <div className="cs-card-icon" style={{ background: COLORS.blueLight, color: COLORS.blue }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
             </div>
             <div>

@@ -2,8 +2,9 @@
 // These functions tag products/orders via GraphQL as fire-and-forget actions.
 // All functions wrap in try/catch and never throw — safe for webhook context.
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AdminClient = any;
+import type { AdminApi } from "../../shopify.server";
+
+type AdminClient = AdminApi;
 
 /**
  * Trigger: product.scored

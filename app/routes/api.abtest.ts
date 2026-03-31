@@ -101,13 +101,33 @@ export async function action({ request }: ActionFunctionArgs) {
       );
     }
 
-    const { testId, variant, event, revenue } = body;
+    const { testId, variant, event, revenue, shop: shopDomain } = body as {
+      testId?: string;
+      variant?: "A" | "B";
+      event?: "impression" | "conversion";
+      revenue?: number;
+      shop?: string;
+    };
 
     if (!testId || !variant || !event) {
       return new Response(
         JSON.stringify({ error: "Missing required fields: testId, variant, event" }),
         { status: 400, headers },
       );
+    }
+
+    // Verify the test belongs to the requesting shop
+    if (shopDomain) {
+      const shop = await prisma.shop.findUnique({ where: { shopDomain } });
+      if (shop) {
+        const test = await prisma.aBTest.findUnique({ where: { id: testId } });
+        if (test && test.shopId !== shop.id) {
+          return new Response(
+            JSON.stringify({ error: "Test does not belong to this shop" }),
+            { status: 403, headers },
+          );
+        }
+      }
     }
 
     if (variant !== "A" && variant !== "B") {

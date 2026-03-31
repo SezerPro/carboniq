@@ -1,4 +1,5 @@
 import type { CarbonLabel } from "@prisma/client";
+import type { AdminApi } from "../../shopify.server";
 
 // ── Grade mapping ─────────────────────────────────────
 
@@ -16,8 +17,7 @@ const LABEL_TO_GRADE: Record<CarbonLabel, string> = {
  * Non-blocking: logs errors but never throws.
  */
 export async function syncProductMetafield(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  admin: any,
+  admin: AdminApi,
   shopifyGid: string,
   carbonScoreKg: number,
   carbonLabel: CarbonLabel,

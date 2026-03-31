@@ -35,11 +35,15 @@ export function getCorsWriteHeaders(request: Request): HeadersInit {
 
 // ── HMAC Signature ──────────────────────────────────────
 
-const API_SECRET = process.env.SHOPIFY_API_SECRET ?? "carboniq-dev-secret";
+const API_SECRET = process.env.SHOPIFY_API_SECRET;
+if (!API_SECRET && process.env.NODE_ENV === "production") {
+  throw new Error("SHOPIFY_API_SECRET is required in production");
+}
+const HMAC_SECRET = API_SECRET ?? "carboniq-dev-secret-local-only";
 
 /** Generate HMAC signature for a payload */
 export function generateSignature(payload: string): string {
-  return crypto.createHmac("sha256", API_SECRET).update(payload).digest("hex");
+  return crypto.createHmac("sha256", HMAC_SECRET).update(payload).digest("hex");
 }
 
 /** Verify HMAC signature from X-Carboniq-Signature header */
@@ -137,9 +141,13 @@ setInterval(() => {
 
 // ── Encryption ──────────────────────────────────────────
 
+const ENCRYPT_SECRET = process.env.SHOPIFY_API_SECRET;
+if (!ENCRYPT_SECRET && process.env.NODE_ENV === "production") {
+  throw new Error("SHOPIFY_API_SECRET is required for encryption in production");
+}
 const ENCRYPT_KEY = crypto
   .createHash("sha256")
-  .update(process.env.SHOPIFY_API_SECRET ?? "carboniq-encrypt-fallback")
+  .update(ENCRYPT_SECRET ?? "carboniq-encrypt-local-only")
   .digest();
 
 const IV_LENGTH = 16;

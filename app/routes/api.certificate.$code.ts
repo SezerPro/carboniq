@@ -45,7 +45,9 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       carbonKg: certificate.carbonKg,
       treesPlanted: certificate.treesPlanted,
       oceanKg: certificate.oceanKg,
-      customerEmail: certificate.customerEmail,
+      customerEmail: certificate.customerEmail
+        ? certificate.customerEmail.replace(/^(.{2})(.*)(@.*)$/, "$1***$3")
+        : null,
       orderName: certificate.orderName,
       createdAt: certificate.createdAt,
       qrCodeUrl: certificate.qrCodeUrl,

@@ -7,15 +7,20 @@ import { getShopBenchmark } from "../lib/benchmark/benchmark.server";
 import { BASE_CSS, INIT_SCRIPT, COLORS } from "../lib/ui/shared-styles";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  try {
+    const { session } = await authenticate.admin(request);
 
-  const shop = await db.shop.findUnique({
-    where: { shopDomain: session.shop },
-  });
-  if (!shop) return { benchmark: null };
+    const shop = await db.shop.findUnique({
+      where: { shopDomain: session.shop },
+    });
+    if (!shop) return { benchmark: null };
 
-  const benchmark = await getShopBenchmark(shop.id);
-  return { benchmark };
+    const benchmark = await getShopBenchmark(shop.id);
+    return { benchmark };
+  } catch (error) {
+    console.error("[app.benchmark] Loader error:", error);
+    return { error: true, message: "Erreur de chargement" };
+  }
 };
 
 // ── Constants ─────────────────────────────────────────────

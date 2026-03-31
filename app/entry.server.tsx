@@ -15,6 +15,13 @@ export default async function handleRequest(
   reactRouterContext: EntryContext
 ) {
   addDocumentResponseHeaders(request, responseHeaders);
+
+  // Security headers for all pages (public and embedded)
+  responseHeaders.set("X-Content-Type-Options", "nosniff");
+  responseHeaders.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  responseHeaders.set("X-DNS-Prefetch-Control", "off");
+  responseHeaders.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+
   const userAgent = request.headers.get("user-agent");
   const callbackName = isbot(userAgent ?? '')
     ? "onAllReady"

@@ -1,4 +1,5 @@
 import db from "../../db.server";
+import type { AdminApi } from "../../shopify.server";
 
 interface CategorizationResult {
   categoryCode: string;
@@ -136,8 +137,7 @@ export async function aiCategorize(product: {
 // Auto-categorize all products in a shop using AI
 export async function aiCategorizeShop(
   shopId: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  admin: any,
+  admin: AdminApi,
 ): Promise<{
   categorized: number;
   improved: number;

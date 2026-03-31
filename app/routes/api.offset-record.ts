@@ -29,8 +29,12 @@ export async function action({ request }: ActionFunctionArgs) {
       return new Response(JSON.stringify({ error: "Rate limit exceeded" }), { status: 429, headers });
     }
 
-    // Verify shop
-    const verification = await verifyApiRequest(request, shop);
+    // Verify shop + HMAC signature
+    const bodyStr = JSON.stringify({ shop, orderId, orderName, customerEmail, carbonKg, amountEur });
+    const verification = await verifyApiRequest(request, shop, {
+      requireSignature: true,
+      body: bodyStr,
+    });
     if (!verification.valid) {
       return new Response(JSON.stringify({ error: verification.error }), { status: 403, headers });
     }

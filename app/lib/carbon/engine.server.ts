@@ -58,12 +58,27 @@ interface CarbonResult {
   categoryCode: string;
 }
 
+// ── EmissionFactor cache (static reference data) ──────
+
+let cachedFactors: EmissionFactor[] | null = null;
+
+async function getFactors(): Promise<EmissionFactor[]> {
+  if (cachedFactors) return cachedFactors;
+  cachedFactors = await prisma.emissionFactor.findMany();
+  return cachedFactors;
+}
+
+/** Clear the emission factor cache (e.g. after seeding) */
+export function clearFactorCache(): void {
+  cachedFactors = null;
+}
+
 // ── findBestFactor ─────────────────────────────────────
 
 export async function findBestFactor(
   product: ProductInput,
 ): Promise<MatchResult> {
-  const factors = await prisma.emissionFactor.findMany();
+  const factors = await getFactors();
 
   // Build a searchable string from the product
   const searchTerms = [
@@ -138,7 +153,11 @@ export function computeCarbonKg(
     product.weight ?? factor.defaultWeightG ?? 500;
   const weightKg = weightGrams / 1000;
 
-  return Math.round(factor.kgCo2PerKg! * weightKg * 100) / 100;
+  if (factor.kgCo2PerKg == null) {
+    return 0;
+  }
+
+  return Math.round(factor.kgCo2PerKg * weightKg * 100) / 100;
 }
 
 // ── computeLabel ───────────────────────────────────────

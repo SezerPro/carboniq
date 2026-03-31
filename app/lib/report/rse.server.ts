@@ -160,6 +160,7 @@ export async function getShopReports(shopId: string) {
 export async function getReport(reportId: string) {
   const report = await prisma.rSEReport.findUnique({
     where: { id: reportId },
+    include: { shop: { select: { shopDomain: true } } },
   });
 
   if (!report) return null;

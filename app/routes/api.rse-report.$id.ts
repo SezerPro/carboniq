@@ -22,7 +22,10 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   }
 
   const reportId = params.id;
-  if (!reportId) {
+  const url = new URL(request.url);
+  const shopDomain = url.searchParams.get("shop");
+
+  if (!reportId || !shopDomain) {
     return silentResponse();
   }
 
@@ -30,6 +33,11 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     const report = await getReport(reportId);
 
     if (!report) {
+      return silentResponse();
+    }
+
+    // Verify the report belongs to the requesting shop (cross-tenant protection)
+    if (report.shopId !== shopDomain && report.shop?.shopDomain !== shopDomain) {
       return silentResponse();
     }
 

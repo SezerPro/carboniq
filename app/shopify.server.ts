@@ -33,3 +33,6 @@ export const unauthenticated = shopify.unauthenticated;
 export const login = shopify.login;
 export const registerWebhooks = shopify.registerWebhooks;
 export const sessionStorage = shopify.sessionStorage;
+
+/** Type for the `admin` object returned by `authenticate.admin(request)` */
+export type AdminApi = Awaited<ReturnType<typeof authenticate.admin>>["admin"];

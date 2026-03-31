@@ -3,102 +3,108 @@ import { useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
+import { BASE_CSS, INIT_SCRIPT, COLORS } from "../lib/ui/shared-styles";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  try {
+    const { session } = await authenticate.admin(request);
 
-  const shop = await db.shop.findUnique({
-    where: { shopDomain: session.shop },
-  });
+    const shop = await db.shop.findUnique({
+      where: { shopDomain: session.shop },
+    });
 
-  if (!shop) return { analytics: null, comparisons: null, trend: [], benchmark: null };
+    if (!shop) return { analytics: null, comparisons: null, trend: [], benchmark: null };
 
-  const products = await db.product.findMany({
-    where: { shopId: shop.id },
-    orderBy: { carbonScoreKg: "desc" },
-  });
+    const products = await db.product.findMany({
+      where: { shopId: shop.id },
+      orderBy: { carbonScoreKg: "desc" },
+    });
 
-  const totalCarbonKg = products.reduce((s, p) => s + (p.carbonScoreKg ?? 0), 0);
-  const avgCarbonKg = products.length > 0 ? totalCarbonKg / products.length : 0;
+    const totalCarbonKg = products.reduce((s, p) => s + (p.carbonScoreKg ?? 0), 0);
+    const avgCarbonKg = products.length > 0 ? totalCarbonKg / products.length : 0;
 
-  const dist = { LOW: 0, MEDIUM: 0, HIGH: 0, VERY_HIGH: 0 };
-  for (const p of products) {
-    if (p.carbonLabel) dist[p.carbonLabel]++;
-  }
+    const dist = { LOW: 0, MEDIUM: 0, HIGH: 0, VERY_HIGH: 0 };
+    for (const p of products) {
+      if (p.carbonLabel) dist[p.carbonLabel]++;
+    }
 
-  // Category breakdown
-  const catMap = new Map<string, { code: string; totalKg: number; count: number }>();
-  for (const p of products) {
-    const code = p.categoryCode ?? "generic.default";
-    const entry = catMap.get(code) ?? { code, totalKg: 0, count: 0 };
-    entry.totalKg += p.carbonScoreKg ?? 0;
-    entry.count++;
-    catMap.set(code, entry);
-  }
-  const categoryBreakdown = [...catMap.values()].sort((a, b) => b.totalKg - a.totalKg);
+    // Category breakdown
+    const catMap = new Map<string, { code: string; totalKg: number; count: number }>();
+    for (const p of products) {
+      const code = p.categoryCode ?? "generic.default";
+      const entry = catMap.get(code) ?? { code, totalKg: 0, count: 0 };
+      entry.totalKg += p.carbonScoreKg ?? 0;
+      entry.count++;
+      catMap.set(code, entry);
+    }
+    const categoryBreakdown = [...catMap.values()].sort((a, b) => b.totalKg - a.totalKg);
 
-  // Top polluters & cleanest
-  const topPolluters = products.slice(0, 10).map((p) => ({
-    id: p.id, title: p.title, carbonScoreKg: p.carbonScoreKg, carbonLabel: p.carbonLabel,
-  }));
-  const topClean = [...products].sort((a, b) => (a.carbonScoreKg ?? 999) - (b.carbonScoreKg ?? 999))
-    .slice(0, 10).map((p) => ({
+    // Top polluters & cleanest
+    const topPolluters = products.slice(0, 10).map((p) => ({
       id: p.id, title: p.title, carbonScoreKg: p.carbonScoreKg, carbonLabel: p.carbonLabel,
     }));
+    const topClean = [...products].sort((a, b) => (a.carbonScoreKg ?? 999) - (b.carbonScoreKg ?? 999))
+      .slice(0, 10).map((p) => ({
+        id: p.id, title: p.title, carbonScoreKg: p.carbonScoreKg, carbonLabel: p.carbonLabel,
+      }));
 
-  // Comparisons
-  const comparisons = {
-    carKm: (totalCarbonKg / 0.21).toFixed(0),
-    flights: (totalCarbonKg / 255).toFixed(1),
-    netflixHours: (totalCarbonKg / 0.036).toFixed(0),
-    smartphones: (totalCarbonKg / 70).toFixed(1),
-    tshirts: (totalCarbonKg / 4).toFixed(0),
-    beefKg: (totalCarbonKg / 26.6).toFixed(1),
-  };
+    // Comparisons
+    const comparisons = {
+      carKm: (totalCarbonKg / 0.21).toFixed(0),
+      flights: (totalCarbonKg / 255).toFixed(1),
+      netflixHours: (totalCarbonKg / 0.036).toFixed(0),
+      smartphones: (totalCarbonKg / 70).toFixed(1),
+      tshirts: (totalCarbonKg / 4).toFixed(0),
+      beefKg: (totalCarbonKg / 26.6).toFixed(1),
+    };
 
-  // Monthly trend from snapshots
-  const snapshots = await db.monthlySnapshot.findMany({
-    where: { shopId: shop.id },
-    orderBy: { month: "asc" },
-    take: 12,
-  });
+    // Monthly trend from snapshots
+    const snapshots = await db.monthlySnapshot.findMany({
+      where: { shopId: shop.id },
+      orderBy: { month: "asc" },
+      take: 12,
+    });
 
-  // Offset stats
-  const offsets = await db.carbonOffset.aggregate({
-    where: { shopId: shop.id, status: "COMPLETED" },
-    _sum: { carbonKg: true, amountEur: true },
-    _count: true,
-  });
+    // Offset stats
+    const offsets = await db.carbonOffset.aggregate({
+      where: { shopId: shop.id, status: "COMPLETED" },
+      _sum: { carbonKg: true, amountEur: true },
+      _count: true,
+    });
 
-  return {
-    analytics: {
-      totalProducts: products.length,
-      totalCarbonKg: Math.round(totalCarbonKg * 100) / 100,
-      avgCarbonKg: Math.round(avgCarbonKg * 100) / 100,
-      distribution: dist,
-      categoryBreakdown,
-      topPolluters,
-      topClean,
-      offsetStats: {
-        totalOffsetKg: offsets._sum.carbonKg ?? 0,
-        totalOffsetEur: offsets._sum.amountEur ?? 0,
-        totalOrders: offsets._count,
+    return {
+      analytics: {
+        totalProducts: products.length,
+        totalCarbonKg: Math.round(totalCarbonKg * 100) / 100,
+        avgCarbonKg: Math.round(avgCarbonKg * 100) / 100,
+        distribution: dist,
+        categoryBreakdown,
+        topPolluters,
+        topClean,
+        offsetStats: {
+          totalOffsetKg: offsets._sum.carbonKg ?? 0,
+          totalOffsetEur: offsets._sum.amountEur ?? 0,
+          totalOrders: offsets._count,
+        },
       },
-    },
-    comparisons,
-    trend: snapshots.map((s) => ({
-      month: s.month,
-      totalCarbonKg: s.totalCarbonKg,
-      avgCarbonKg: s.avgCarbonKg,
-      productCount: s.totalProducts,
-      offsetKg: s.totalOffsetKg,
-    })),
-  };
+      comparisons,
+      trend: snapshots.map((s) => ({
+        month: s.month,
+        totalCarbonKg: s.totalCarbonKg,
+        avgCarbonKg: s.avgCarbonKg,
+        productCount: s.totalProducts,
+        offsetKg: s.totalOffsetKg,
+      })),
+    };
+  } catch (error) {
+    console.error("[app.analytics] Loader error:", error);
+    return { error: true, message: "Erreur de chargement" };
+  }
 };
 
 // ── Styles ──
 
-const CSS = `
+const PAGE_CSS = `
 .ca *{box-sizing:border-box;margin:0;padding:0}
 .ca{
   font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
@@ -206,8 +212,6 @@ export default function Analytics() {
     );
   }
 
-  const initScript = `(function(){if(document.getElementById('ca-o'))return;var s=document.createElement('style');s.id='ca-o';s.textContent='html,body,#app,[data-shopify-app-init]{background:#F5F0EB!important}.Polaris-Frame__Main,.Polaris-Frame{background:#F5F0EB!important}';document.head.appendChild(s);if(!document.getElementById('ca-f')){var l=document.createElement('link');l.id='ca-f';l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap';document.head.appendChild(l)}})()`;
-
   const netCarbon = analytics.totalCarbonKg - analytics.offsetStats.totalOffsetKg;
   const offsetPct = analytics.totalCarbonKg > 0
     ? Math.round((analytics.offsetStats.totalOffsetKg / analytics.totalCarbonKg) * 100) : 0;
@@ -215,8 +219,8 @@ export default function Analytics() {
 
   return (
     <s-page heading="Analytiques">
-      <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      <script dangerouslySetInnerHTML={{ __html: initScript }} />
+      <style dangerouslySetInnerHTML={{ __html: BASE_CSS + PAGE_CSS }} />
+      <script dangerouslySetInnerHTML={{ __html: INIT_SCRIPT }} />
 
       <div className="ca">
         {/* ── Metrics ── */}
@@ -240,7 +244,7 @@ export default function Analytics() {
         {comparisons && (
           <div className="ca-glass ca-anim" style={{ animationDelay: ".1s" }}>
             <div className="ca-glass-head">
-              <div className="ca-glass-head-icon" style={{ background: "rgba(74,124,89,.08)", color: "#4A7C59" }}>
+              <div className="ca-glass-head-icon" style={{ background: COLORS.greenLight, color: COLORS.green }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
               </div>
               <div className="ca-glass-title">Votre empreinte équivaut à…</div>
@@ -271,7 +275,7 @@ export default function Analytics() {
         {/* ── Distribution ── */}
         <div className="ca-glass ca-anim" style={{ animationDelay: ".14s" }}>
           <div className="ca-glass-head">
-            <div className="ca-glass-head-icon" style={{ background: "rgba(74,124,89,.08)", color: "#4A7C59" }}>
+            <div className="ca-glass-head-icon" style={{ background: COLORS.greenLight, color: COLORS.green }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
             </div>
             <div className="ca-glass-title">Répartition des produits</div>
@@ -318,11 +322,11 @@ export default function Analytics() {
                   <tr key={cat.code}>
                     <td><span className="ca-cat-badge">{cat.code}</span></td>
                     <td style={{ textAlign: "right", fontFamily: "'DM Mono', monospace", fontWeight: 600 }}>{cat.totalKg.toFixed(1)} kgCO₂e</td>
-                    <td style={{ textAlign: "right", color: "#9C9488" }}>{cat.count}</td>
+                    <td style={{ textAlign: "right", color: COLORS.textMuted }}>{cat.count}</td>
                     <td style={{ textAlign: "right" }}>
                       <div className="ca-bar-wrap">
                         <div className="ca-bar-track"><div className="ca-bar-fill" style={{ width: `${pct}%` }} /></div>
-                        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: "#9C9488" }}>{pct.toFixed(0)}%</span>
+                        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: COLORS.textMuted }}>{pct.toFixed(0)}%</span>
                       </div>
                     </td>
                   </tr>
@@ -367,7 +371,7 @@ export default function Analytics() {
         {trend.length > 0 && (
           <div className="ca-glass ca-anim" style={{ animationDelay: ".26s" }}>
             <div className="ca-glass-head">
-              <div className="ca-glass-head-icon" style={{ background: "rgba(74,124,89,.08)", color: "#4A7C59" }}>
+              <div className="ca-glass-head-icon" style={{ background: COLORS.greenLight, color: COLORS.green }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
               </div>
               <div className="ca-glass-title">Évolution mensuelle</div>

@@ -10,79 +10,66 @@ interface BenchmarkData {
 }
 
 export async function getShopBenchmark(shopId: string): Promise<BenchmarkData> {
-  // Get this shop's data
-  const shopProducts = await db.product.findMany({
+  // Shop's own aggregate (no full scan)
+  const shopAgg = await db.product.aggregate({
     where: { shopId, carbonScoreKg: { not: null } },
+    _avg: { carbonScoreKg: true },
+    _count: true,
+  });
+  const shopAvg = shopAgg._avg.carbonScoreKg ?? 0;
+
+  // Global aggregate — anonymized, no individual shop data exposed
+  const globalAgg = await db.product.aggregate({
+    where: { carbonScoreKg: { not: null } },
+    _avg: { carbonScoreKg: true },
+    _count: true,
+  });
+  const globalAvg = globalAgg._avg.carbonScoreKg ?? shopAvg;
+
+  // Count shops with lower average than this shop (for percentile)
+  // Use groupBy to get per-shop averages without loading all data
+  const shopAverages = await db.product.groupBy({
+    by: ["shopId"],
+    where: { carbonScoreKg: { not: null } },
+    _avg: { carbonScoreKg: true },
   });
 
-  const shopAvg =
-    shopProducts.length > 0
-      ? shopProducts.reduce((s, p) => s + (p.carbonScoreKg ?? 0), 0) /
-        shopProducts.length
-      : 0;
-
-  // Get all shops' averages for benchmarking
-  const allShops = await db.shop.findMany({
-    include: { products: { where: { carbonScoreKg: { not: null } } } },
-  });
-
-  const shopAverages: number[] = [];
-  for (const shop of allShops) {
-    if (shop.products.length > 0) {
-      const avg =
-        shop.products.reduce((s, p) => s + (p.carbonScoreKg ?? 0), 0) /
-        shop.products.length;
-      shopAverages.push(avg);
-    }
-  }
-
-  // Calculate percentile (lower carbon = better = lower percentile number)
-  const sorted = [...shopAverages].sort((a, b) => a - b);
-  const rank = sorted.findIndex((v) => v >= shopAvg);
+  const totalShops = shopAverages.length;
+  const shopsWithLowerAvg = shopAverages.filter(
+    (s) => (s._avg.carbonScoreKg ?? 0) < shopAvg,
+  ).length;
   const percentile =
-    sorted.length > 0 ? Math.round((rank / sorted.length) * 100) : 50;
+    totalShops > 0 ? Math.round((shopsWithLowerAvg / totalShops) * 100) : 50;
   const betterThanPct = 100 - percentile;
 
-  // Global average
-  const globalAvg =
-    shopAverages.length > 0
-      ? shopAverages.reduce((s, v) => s + v, 0) / shopAverages.length
-      : shopAvg;
-
-  // Industry averages by category (from all shops)
-  const allProducts = await db.product.findMany({
+  // Industry averages by category — anonymized aggregation only
+  const categoryAggs = await db.product.groupBy({
+    by: ["categoryCode"],
     where: { carbonScoreKg: { not: null } },
+    _avg: { carbonScoreKg: true },
   });
 
-  const catSums = new Map<string, { total: number; count: number }>();
-  for (const p of allProducts) {
-    const cat = p.categoryCode ?? "generic.default";
-    const entry = catSums.get(cat) ?? { total: 0, count: 0 };
-    entry.total += p.carbonScoreKg ?? 0;
-    entry.count++;
-    catSums.set(cat, entry);
-  }
-
   const industryAvg: Record<string, number> = {};
-  for (const [cat, data] of catSums) {
-    industryAvg[cat] = Math.round((data.total / data.count) * 100) / 100;
+  for (const cat of categoryAggs) {
+    const key = cat.categoryCode ?? "generic.default";
+    industryAvg[key] =
+      Math.round((cat._avg.carbonScoreKg ?? 0) * 100) / 100;
   }
 
-  // Shop by category
-  const shopCatSums = new Map<string, { total: number; count: number }>();
-  for (const p of shopProducts) {
-    const cat = p.categoryCode ?? "generic.default";
-    const entry = shopCatSums.get(cat) ?? { total: 0, count: 0 };
-    entry.total += p.carbonScoreKg ?? 0;
-    entry.count++;
-    shopCatSums.set(cat, entry);
-  }
+  // Shop's own categories — only this shop's data
+  const shopCategoryAggs = await db.product.groupBy({
+    by: ["categoryCode"],
+    where: { shopId, carbonScoreKg: { not: null } },
+    _avg: { carbonScoreKg: true },
+    _count: true,
+  });
 
   const shopByCategory: Record<string, { avg: number; count: number }> = {};
-  for (const [cat, data] of shopCatSums) {
-    shopByCategory[cat] = {
-      avg: Math.round((data.total / data.count) * 100) / 100,
-      count: data.count,
+  for (const cat of shopCategoryAggs) {
+    const key = cat.categoryCode ?? "generic.default";
+    shopByCategory[key] = {
+      avg: Math.round((cat._avg.carbonScoreKg ?? 0) * 100) / 100,
+      count: cat._count,
     };
   }
 

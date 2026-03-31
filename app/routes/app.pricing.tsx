@@ -8,28 +8,34 @@ import db from "../db.server";
 import { PLANS, type PlanTier } from "../lib/plans/constants";
 import { getPlanTier } from "../lib/plans/gates.server";
 import { createSubscription, cancelSubscription, syncPlanFromShopify, getActiveSubscription } from "../lib/plans/billing.server";
+import { BASE_CSS, INIT_SCRIPT, COLORS } from "../lib/ui/shared-styles";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session, admin } = await authenticate.admin(request);
+  try {
+    const { session, admin } = await authenticate.admin(request);
 
-  // Sync plan from Shopify on every load (catches approved/canceled subscriptions)
-  await syncPlanFromShopify(admin, session.shop);
+    // Sync plan from Shopify on every load (catches approved/canceled subscriptions)
+    await syncPlanFromShopify(admin, session.shop);
 
-  const shop = await db.shop.findUnique({ where: { shopDomain: session.shop } });
-  const currentTier = getPlanTier(shop?.plan, shop?.planStatus);
+    const shop = await db.shop.findUnique({ where: { shopDomain: session.shop } });
+    const currentTier = getPlanTier(shop?.plan, shop?.planStatus);
 
-  // Get active subscription info
-  const activeSub = await getActiveSubscription(admin);
+    // Get active subscription info
+    const activeSub = await getActiveSubscription(admin);
 
-  return {
-    currentTier,
-    shopDomain: session.shop,
-    activeSub: activeSub ? {
-      name: activeSub.name,
-      status: activeSub.status,
-      trialDays: activeSub.trialDays,
-    } : null,
-  };
+    return {
+      currentTier,
+      shopDomain: session.shop,
+      activeSub: activeSub ? {
+        name: activeSub.name,
+        status: activeSub.status,
+        trialDays: activeSub.trialDays,
+      } : null,
+    };
+  } catch (error) {
+    console.error("[app.pricing] Loader error:", error);
+    return { error: true, message: "Erreur de chargement" };
+  }
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -81,7 +87,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 const TIER_LEVEL: Record<string, number> = { FREE: 0, STARTER: 1, GROWTH: 2, PRO: 3, SCALE: 4 };
 
-const CSS = `
+const PAGE_CSS = `
 .cp *{box-sizing:border-box;margin:0;padding:0}
 .cp{
   font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
@@ -226,7 +232,9 @@ const CSS = `
 `;
 
 export default function Pricing() {
-  const { currentTier } = useLoaderData<typeof loader>();
+  const data = useLoaderData<typeof loader>();
+  if ("error" in data) return <div style={{ padding: 40, textAlign: "center", color: COLORS.textMuted }}>Erreur de chargement. Rechargez la page.</div>;
+  const { currentTier } = data;
   const fetcher = useFetcher<typeof action>();
   const shopify = useAppBridge();
   const isChanging = fetcher.state !== "idle";
@@ -243,21 +251,6 @@ export default function Pricing() {
     }
   }, [fetcher.data, shopify]);
 
-  // Polaris overrides + fonts
-  useEffect(() => {
-    if (document.getElementById("cp-override")) return;
-    const s = document.createElement("style");
-    s.id = "cp-override";
-    s.textContent = "html,body,#app,[data-shopify-app-init]{background:#F5F0EB!important}.Polaris-Frame__Main,.Polaris-Frame{background:#F5F0EB!important}";
-    document.head.appendChild(s);
-    if (!document.getElementById("cp-fonts")) {
-      const l = document.createElement("link"); l.id = "cp-fonts"; l.rel = "stylesheet";
-      l.href = "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap";
-      document.head.appendChild(l);
-    }
-    return () => { document.getElementById("cp-override")?.remove(); };
-  }, []);
-
   const handleSelect = (tier: PlanTier) => {
     if (tier === currentTier) return;
     if (tier === "FREE") {
@@ -271,19 +264,20 @@ export default function Pricing() {
 
   return (
     <s-page heading="Choisir votre plan">
-      <style dangerouslySetInnerHTML={{ __html: CSS }} />
+      <style dangerouslySetInnerHTML={{ __html: BASE_CSS + PAGE_CSS }} />
+      <script dangerouslySetInnerHTML={{ __html: INIT_SCRIPT }} />
 
       <div className="cp">
 
         {/* Current plan banner */}
         <div className="cp-current cp-anim">
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <span style={{ fontSize: 12, color: "#9C9488" }}>Plan actuel</span>
+            <span style={{ fontSize: 12, color: COLORS.textMuted }}>Plan actuel</span>
             <span className="cp-current-plan">{tierName(currentTier)}</span>
           </div>
           <span className="cp-current-badge" style={{
             background: currentTier === "FREE" ? "rgba(164,156,144,.1)" : "rgba(74,124,89,.1)",
-            color: currentTier === "FREE" ? "#9C9488" : "#15803D",
+            color: currentTier === "FREE" ? COLORS.textMuted : "#15803D",
             border: `1px solid ${currentTier === "FREE" ? "rgba(164,156,144,.15)" : "rgba(74,124,89,.15)"}`,
           }}>
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor", display: "inline-block" }} />
@@ -303,11 +297,11 @@ export default function Pricing() {
               <div key={plan.tier} className={`cp-card cp-anim ${isRec ? "cp-card--rec" : ""} ${isCurrent ? "cp-card--cur" : ""}`}>
                 {plan.badge && !isCurrent && (
                   <div className="cp-badge" style={{
-                    background: isRec ? "#4A7C59" : "#2C2825", color: "#FDFCFB",
+                    background: isRec ? COLORS.green : COLORS.dark, color: "#FDFCFB",
                   }}>{plan.badge}</div>
                 )}
                 {isCurrent && (
-                  <div className="cp-badge" style={{ background: "#2C2825", color: "#FDFCFB" }}>Plan actuel</div>
+                  <div className="cp-badge" style={{ background: COLORS.dark, color: "#FDFCFB" }}>Plan actuel</div>
                 )}
 
                 <div className="cp-name">{plan.name}</div>

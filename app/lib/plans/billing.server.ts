@@ -1,5 +1,6 @@
 import db from "../../db.server";
 import type { PlanTier } from "./constants";
+import type { AdminApi } from "../../shopify.server";
 
 const PLAN_PRICES: Record<Exclude<PlanTier, "FREE">, number> = {
   STARTER: 19.90,
@@ -15,21 +16,14 @@ const PLAN_NAMES: Record<Exclude<PlanTier, "FREE">, string> = {
   SCALE: "Carboniq Scale",
 };
 
-const PRODUCT_LIMITS: Record<PlanTier, number> = {
-  FREE: 10,
-  STARTER: 100,
-  GROWTH: 1000,
-  PRO: 5000,
-  SCALE: 999999,
-};
+import { PRODUCT_LIMITS } from "./gates.server";
 
 /**
  * Create a Shopify AppSubscription via the Billing API.
  * Returns the confirmation URL where the merchant approves the charge.
  */
 export async function createSubscription(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  admin: any,
+  admin: AdminApi,
   plan: Exclude<PlanTier, "FREE">,
   shopDomain: string,
   returnUrl: string,
@@ -109,8 +103,7 @@ export async function createSubscription(
 /**
  * Check the current active subscription status from Shopify.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function getActiveSubscription(admin: any): Promise<{
+export async function getActiveSubscription(admin: AdminApi): Promise<{
   id: string;
   name: string;
   status: string;
@@ -150,8 +143,7 @@ export async function getActiveSubscription(admin: any): Promise<{
 /**
  * Cancel the current subscription.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function cancelSubscription(admin: any, subscriptionId: string): Promise<boolean> {
+export async function cancelSubscription(admin: AdminApi, subscriptionId: string): Promise<boolean> {
   const response = await admin.graphql(
     `#graphql
     mutation appSubscriptionCancel($id: ID!) {
@@ -176,8 +168,7 @@ export async function cancelSubscription(admin: any, subscriptionId: string): Pr
 /**
  * After merchant approves, sync the plan to our database.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function syncPlanFromShopify(admin: any, shopDomain: string): Promise<PlanTier> {
+export async function syncPlanFromShopify(admin: AdminApi, shopDomain: string): Promise<PlanTier> {
   const activeSub = await getActiveSubscription(admin);
 
   const shop = await db.shop.findUnique({ where: { shopDomain } });
@@ -187,7 +178,7 @@ export async function syncPlanFromShopify(admin: any, shopDomain: string): Promi
     // No active sub → free plan
     await db.shop.update({
       where: { id: shop.id },
-      data: { plan: "STARTER", planStatus: "CANCELED" },
+      data: { plan: "FREE", planStatus: "CANCELED" },
     });
     return "FREE";
   }
@@ -203,12 +194,7 @@ export async function syncPlanFromShopify(admin: any, shopDomain: string): Promi
 
   await db.shop.update({
     where: { id: shop.id },
-    data: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      plan: plan === "FREE" ? "STARTER" : plan as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      planStatus: status as any,
-    },
+    data: { plan, planStatus: status },
   });
 
   // Update subscription record
@@ -216,18 +202,14 @@ export async function syncPlanFromShopify(admin: any, shopDomain: string): Promi
     where: { shopId: shop.id },
     create: {
       shopId: shop.id,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      plan: plan === "FREE" ? "STARTER" : plan as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      status: status as any,
+      plan,
+      status,
       shopifyChargeId: activeSub.id,
       productLimit: PRODUCT_LIMITS[plan],
     },
     update: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      plan: plan === "FREE" ? "STARTER" : plan as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      status: status as any,
+      plan,
+      status,
       shopifyChargeId: activeSub.id,
       productLimit: PRODUCT_LIMITS[plan],
     },

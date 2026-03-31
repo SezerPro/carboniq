@@ -7,46 +7,51 @@ import { scanShopCompliance, getLatestScan, getCompliantTemplates, getScanHistor
 import { BASE_CSS, INIT_SCRIPT, COLORS } from "../lib/ui/shared-styles";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  try {
+    const { session } = await authenticate.admin(request);
 
-  const shop = await db.shop.findUnique({ where: { shopDomain: session.shop } });
-  if (!shop) return { scan: null, templates: getCompliantTemplates(), history: [], score: 100 };
+    const shop = await db.shop.findUnique({ where: { shopDomain: session.shop } });
+    if (!shop) return { scan: null, templates: getCompliantTemplates(), history: [], score: 100 };
 
-  const latestScan = await getLatestScan(shop.id);
-  const scan = latestScan
-    ? {
-        scannedAt: latestScan.scannedAt.toISOString(),
-        totalPages: latestScan.totalPages,
-        totalIssues: latestScan.totalIssues,
-        findings: JSON.parse(latestScan.findings),
-      }
-    : null;
+    const latestScan = await getLatestScan(shop.id);
+    const scan = latestScan
+      ? {
+          scannedAt: latestScan.scannedAt.toISOString(),
+          totalPages: latestScan.totalPages,
+          totalIssues: latestScan.totalIssues,
+          findings: JSON.parse(latestScan.findings),
+        }
+      : null;
 
-  // Scan history
-  const rawHistory = await getScanHistory(shop.id, 10);
-  const history = rawHistory.map((h) => ({
-    scannedAt: h.scannedAt.toISOString(),
-    totalPages: h.totalPages,
-    totalIssues: h.totalIssues,
-  }));
+    // Scan history
+    const rawHistory = await getScanHistory(shop.id, 10);
+    const history = rawHistory.map((h) => ({
+      scannedAt: h.scannedAt.toISOString(),
+      totalPages: h.totalPages,
+      totalIssues: h.totalIssues,
+    }));
 
-  // Compliance score: 100% if 0 issues, decreases per issue severity
-  const findings = scan?.findings ?? [];
-  const criticalWeight = 25;
-  const highWeight = 15;
-  const mediumWeight = 5;
-  const lowWeight = 2;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const penalty = findings.reduce((sum: number, f: any) => {
-    if (f.severity === "critical") return sum + criticalWeight;
-    if (f.severity === "high") return sum + highWeight;
-    if (f.severity === "medium") return sum + mediumWeight;
-    if (f.severity === "low") return sum + lowWeight;
-    return sum;
-  }, 0);
-  const score = Math.max(0, Math.min(100, 100 - penalty));
+    // Compliance score: 100% if 0 issues, decreases per issue severity
+    const findings = scan?.findings ?? [];
+    const criticalWeight = 25;
+    const highWeight = 15;
+    const mediumWeight = 5;
+    const lowWeight = 2;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const penalty = findings.reduce((sum: number, f: any) => {
+      if (f.severity === "critical") return sum + criticalWeight;
+      if (f.severity === "high") return sum + highWeight;
+      if (f.severity === "medium") return sum + mediumWeight;
+      if (f.severity === "low") return sum + lowWeight;
+      return sum;
+    }, 0);
+    const score = Math.max(0, Math.min(100, 100 - penalty));
 
-  return { scan, templates: getCompliantTemplates(), history, score };
+    return { scan, templates: getCompliantTemplates(), history, score };
+  } catch (error) {
+    console.error("[app.compliance] Loader error:", error);
+    return { error: true, message: "Erreur de chargement" };
+  }
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {

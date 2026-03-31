@@ -8,32 +8,33 @@ import { BASE_CSS, INIT_SCRIPT, COLORS } from "../lib/ui/shared-styles";
 // ── Loader ─────────────────────────────────────────────
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  try {
+    const { session } = await authenticate.admin(request);
 
-  const shop = await db.shop.findUnique({
-    where: { shopDomain: session.shop },
-    include: {
-      products: true,
-      offsets: { where: { status: "COMPLETED" } },
-      certificates: true,
-      abTests: { where: { isActive: false, winnerVariant: { not: null } } },
-    },
-  });
+    const shop = await db.shop.findUnique({
+      where: { shopDomain: session.shop },
+      include: {
+        products: true,
+        offsets: { where: { status: "COMPLETED" } },
+        certificates: true,
+        abTests: { where: { isActive: false, winnerVariant: { not: null } } },
+      },
+    });
 
-  if (!shop) {
-    return {
-      hasData: false,
-      offsetRevenue: 0,
-      totalCertificates: 0,
-      adoptionRate: 0,
-      estimatedAddedValue: 0,
-      revenueBreakdown: { offsetDirect: 0, conversionLift: 0, avgOrderValueLift: 0 },
-      abTestInsights: [],
-      productsWithBadge: 0,
-      productsWithoutBadge: 0,
-      recommendations: [],
-    };
-  }
+    if (!shop) {
+      return {
+        hasData: false,
+        offsetRevenue: 0,
+        totalCertificates: 0,
+        adoptionRate: 0,
+        estimatedAddedValue: 0,
+        revenueBreakdown: { offsetDirect: 0, conversionLift: 0, avgOrderValueLift: 0 },
+        abTestInsights: [],
+        productsWithBadge: 0,
+        productsWithoutBadge: 0,
+        recommendations: [],
+      };
+    }
 
   // Revenue from offsets
   const offsetRevenue = shop.offsets.reduce((sum, o) => sum + o.amountEur, 0);
@@ -141,6 +142,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     productsWithoutBadge,
     recommendations,
   };
+  } catch (error) {
+    console.error("[app.roi] Loader error:", error);
+    return { error: true, message: "Erreur de chargement" };
+  }
 };
 
 // ── Page CSS ──────────────────────────────────────────

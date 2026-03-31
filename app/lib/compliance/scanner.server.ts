@@ -1,4 +1,5 @@
 import prisma from "../../db.server";
+import type { AdminApi } from "../../shopify.server";
 
 // Banned terms and phrases per EU EmpCo directive
 const BANNED_CLAIMS = [
@@ -26,8 +27,7 @@ interface ComplianceFinding {
 }
 
 // Scan product titles and descriptions for banned claims
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function scanShopCompliance(shopId: string, admin: any): Promise<{
+export async function scanShopCompliance(shopId: string, admin: AdminApi): Promise<{
   findings: ComplianceFinding[];
   totalProducts: number;
   totalIssues: number;

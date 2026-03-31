@@ -17,6 +17,7 @@ datasource db {
 // ── Enums ──────────────────────────────────────────────
 
 enum Plan {
+  FREE
   STARTER
   GROWTH
   PRO
@@ -82,6 +83,8 @@ model Session {
   emailVerified Boolean?  @default(false)
   refreshToken        String?
   refreshTokenExpires DateTime?
+
+  @@index([shop])
 }
 
 model Shop {
@@ -90,7 +93,7 @@ model Shop {
   accessToken    String
   email          String?
   name           String?
-  plan           Plan         @default(STARTER)
+  plan           Plan         @default(FREE)
   planStatus     PlanStatus   @default(TRIALING)
   trialEndsAt    DateTime?
   badgeStyle     BadgeStyle   @default(PILL)
@@ -172,12 +175,13 @@ model Product {
 
   @@unique([shopId, shopifyProductId])
   @@index([shopId])
+  @@index([categoryCode])
 }
 
 model EmissionFactor {
   id              String  @id @default(cuid())
   code            String  @unique
-  category        String
+  category        String  // @index below
   subcategory     String
   labelFr         String
   labelEn         String
@@ -191,12 +195,14 @@ model EmissionFactor {
   confidence      Float   @default(0.7)
   keywords        String  @default("[]")
   updatedAt       DateTime @updatedAt
+
+  @@index([category])
 }
 
 model Subscription {
   id                 String    @id @default(cuid())
   shopId             String    @unique
-  plan               Plan      @default(STARTER)
+  plan               Plan      @default(FREE)
   status             PlanStatus @default(TRIALING)
   shopifyChargeId    String?
   productLimit       Int       @default(50)
@@ -232,6 +238,7 @@ model CarbonOffset {
   certificate     Certificate?
 
   @@index([shopId])
+  @@index([shopId, status])
   @@index([orderId])
 }
 

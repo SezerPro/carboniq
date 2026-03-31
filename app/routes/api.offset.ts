@@ -126,8 +126,12 @@ export async function action({ request }: ActionFunctionArgs) {
     return new Response(JSON.stringify({ error: "Rate limit exceeded" }), { status: 429, headers });
   }
 
-  // Verify shop exists and plan active
-  const verification = await verifyApiRequest(request, shopDomain);
+  // Verify shop exists, plan active, and HMAC signature
+  const bodyStr = JSON.stringify(body);
+  const verification = await verifyApiRequest(request, shopDomain, {
+    requireSignature: true,
+    body: bodyStr,
+  });
   if (!verification.valid) {
     return new Response(JSON.stringify({ error: verification.error }), { status: 403, headers });
   }

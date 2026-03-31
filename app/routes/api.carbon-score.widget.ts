@@ -94,12 +94,14 @@ function getEquivalents(
 async function getComparison(
   scoreKg: number,
   categoryCode: string | null,
+  shopId: string,
 ): Promise<{ text: string; icon: string } | null> {
   if (!categoryCode) return null;
 
-  // Get all products in same category to calculate percentile
+  // Only compare within the same shop's products (no cross-tenant data leak)
   const categoryProducts = await prisma.product.findMany({
     where: {
+      shopId,
       categoryCode,
       carbonScoreKg: { not: null },
     },
@@ -170,7 +172,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const carbonLabel = getCarbonLabel(scoreKg);
     const badge = getBadge(carbonLabel);
     const equivalents = getEquivalents(scoreKg);
-    const comparison = await getComparison(scoreKg, product.categoryCode);
+    const comparison = await getComparison(scoreKg, product.categoryCode, shop.id);
 
     // Social proof: total offsets and customers for this shop
     const offsetAgg = await prisma.carbonOffset.aggregate({

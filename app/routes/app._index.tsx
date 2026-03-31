@@ -16,6 +16,7 @@ import { hasAccess, FEATURES, type PlanTier } from "../lib/plans/constants";
 import { getPlanTier } from "../lib/plans/gates.server";
 import { computeAlerts } from "../lib/notifications/alerts.server";
 import { AlertBanner } from "../components/AlertBanner";
+import { BASE_CSS, INIT_SCRIPT, COLORS } from "../lib/ui/shared-styles";
 
 // ── Loader ─────────────────────────────────────────────
 
@@ -205,7 +206,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 // ── Component ──────────────────────────────────────────
 
-const CSS = `
+const PAGE_CSS = `
 /* ── Reset ── */
 .cq *{box-sizing:border-box;margin:0;padding:0}
 .cq{
@@ -634,26 +635,8 @@ export default function Index() {
     }
   }, [fetcher.data, shopify]);
 
-  // Polaris overrides + fonts
+  // Counter animation
   useEffect(() => {
-    const style = document.createElement("style");
-    style.id = "cq-global-override";
-    style.textContent = `
-      html,body,#app,[data-shopify-app-init]{background:#F5F0EB!important}
-      .Polaris-Frame__Main{background:#F5F0EB!important}
-      .Polaris-Frame{background:#F5F0EB!important}
-    `;
-    document.head.appendChild(style);
-
-    if (!document.getElementById("cq-fonts")) {
-      const link = document.createElement("link");
-      link.id = "cq-fonts";
-      link.rel = "stylesheet";
-      link.href = "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap";
-      document.head.appendChild(link);
-    }
-
-    // Counter animation
     const nums = document.querySelectorAll("[data-cq-count]");
     nums.forEach((el) => {
       const target = parseFloat(el.getAttribute("data-cq-count") || "0");
@@ -670,8 +653,6 @@ export default function Index() {
       };
       requestAnimationFrame(step);
     });
-
-    return () => { document.getElementById("cq-global-override")?.remove(); };
   }, []);
 
   const navigate = useNavigate();
@@ -703,7 +684,8 @@ export default function Index() {
         Recalculer tout
       </s-button>
 
-      <style dangerouslySetInnerHTML={{ __html: CSS + `\n.cq-ring-fg{--ring-offset:${ringOffset}}` }} />
+      <style dangerouslySetInnerHTML={{ __html: BASE_CSS + PAGE_CSS + `\n.cq-ring-fg{--ring-offset:${ringOffset}}` }} />
+      <script dangerouslySetInnerHTML={{ __html: INIT_SCRIPT }} />
 
       <div className="cq">
 
@@ -781,7 +763,7 @@ export default function Index() {
           </div>
 
           <div className="cq-glass cq-span-4 cq-quota cq-anim" style={{ animationDelay: ".06s" }}>
-            <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase" as const, color: "#B8B0A6", marginBottom: 8 }}>
+            <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase" as const, color: COLORS.textFaint, marginBottom: 8 }}>
               Quota produits
             </div>
             {/* Arc gauge SVG */}
@@ -829,7 +811,7 @@ export default function Index() {
                   <div className="cq-stat-num" style={{ color: lb.color }} data-cq-count={count}>{count}</div>
                   <div className="cq-stat-meta">
                     <span className="cq-stat-pct" style={{ background: lb.bg, color: lb.color }}>{pct}%</span>
-                    {isDominant && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: "#9C9488" }}>{count} sur {stats.total}</span>}
+                    {isDominant && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: COLORS.textMuted }}>{count} sur {stats.total}</span>}
                   </div>
                   <div className="cq-stat-bar">
                     <div className="cq-stat-bar-fill" style={{ width: `${pct}%`, background: lb.accent }} />

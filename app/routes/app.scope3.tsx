@@ -15,15 +15,20 @@ import {
 import { BASE_CSS, INIT_SCRIPT, COLORS } from "../lib/ui/shared-styles";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  try {
+    const { session } = await authenticate.admin(request);
 
-  const shop = await db.shop.findUnique({
-    where: { shopDomain: session.shop },
-  });
-  if (!shop) return { summary: null };
+    const shop = await db.shop.findUnique({
+      where: { shopDomain: session.shop },
+    });
+    if (!shop) return { summary: null };
 
-  const summary = await getScope3Summary(shop.id);
-  return { summary };
+    const summary = await getScope3Summary(shop.id);
+    return { summary };
+  } catch (error) {
+    console.error("[app.scope3] Loader error:", error);
+    return { error: true, message: "Erreur de chargement" };
+  }
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {

@@ -10,95 +10,100 @@ import { BASE_CSS, INIT_SCRIPT, COLORS } from "../lib/ui/shared-styles";
 // ── Loader ─────────────────────────────────────────────
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  try {
+    const { session } = await authenticate.admin(request);
 
-  const shop = await db.shop.findUnique({
-    where: { shopDomain: session.shop },
-  });
+    const shop = await db.shop.findUnique({
+      where: { shopDomain: session.shop },
+    });
 
-  if (!shop) {
+    if (!shop) {
+      return {
+        shop: null,
+        stats: null,
+        timeline: [],
+        trend: [],
+        certificates: 0,
+        milestones: [],
+        portalUrl: "",
+      };
+    }
+
+    const stats = await getShopImpactStats(shop.id);
+
+    const timeline = await getImpactTimeline(shop.id, 20);
+
+    // Offset stats
+    const offsetAgg = await db.carbonOffset.aggregate({
+      where: { shopId: shop.id, status: "COMPLETED" },
+      _sum: { carbonKg: true },
+      _count: true,
+    });
+
+    // Certificate count
+    const certCount = await db.certificate.count({
+      where: { shopId: shop.id },
+    });
+
+    // Monthly snapshots
+    const snapshots = await db.monthlySnapshot.findMany({
+      where: { shopId: shop.id },
+      orderBy: { month: "asc" },
+      take: 12,
+    });
+
+    const trend = snapshots.map((s) => ({
+      month: s.month,
+      offsetKg: s.totalOffsetKg,
+      treesPlanted: s.totalTreesPlanted,
+      oceanKg: s.totalOceanKg,
+    }));
+
+    // Milestones
+    const totalCarbonKg = stats.carbon.totalKg;
+    const treesPlanted = stats.trees.totalCount;
+    const oceanKg = stats.ocean.totalKg;
+
+    const milestones = [
+      { label: "100 kg CO₂", target: 100, current: totalCarbonKg, icon: "cloud" },
+      { label: "500 kg CO₂", target: 500, current: totalCarbonKg, icon: "cloud-heavy" },
+      { label: "1 tonne CO₂", target: 1000, current: totalCarbonKg, icon: "globe" },
+      { label: "50 arbres", target: 50, current: treesPlanted, icon: "tree" },
+      { label: "100 arbres", target: 100, current: treesPlanted, icon: "tree-alt" },
+      { label: "50 kg plastique", target: 50, current: oceanKg, icon: "wave" },
+    ];
+
+    const appUrl = process.env.SHOPIFY_APP_URL || "";
+    const portalUrl = `${appUrl}/api/impact-portal?shop=${encodeURIComponent(shop.shopDomain)}`;
+
     return {
-      shop: null,
-      stats: null,
-      timeline: [],
-      trend: [],
-      certificates: 0,
-      milestones: [],
-      portalUrl: "",
+      shop: {
+        name: shop.name ?? shop.shopDomain.replace(".myshopify.com", ""),
+        domain: shop.shopDomain,
+      },
+      stats: {
+        totalCarbonKg: stats.carbon.totalKg,
+        treesPlanted: stats.trees.totalCount,
+        oceanPlasticKg: stats.ocean.totalKg,
+        totalOrders: offsetAgg._count,
+        totalInvested: stats.totalEur,
+      },
+      timeline: timeline.map((t) => ({
+        id: t.id,
+        type: t.type,
+        quantity: t.quantity,
+        orderId: t.orderId,
+        date: t.createdAt.toISOString(),
+      })),
+      trend,
+      certificates: certCount,
+      milestones,
+      portalUrl,
     };
+  } catch (error) {
+    console.error("[app.impact] Loader error:", error);
+    return { error: true, message: "Erreur de chargement" };
   }
-
-  const stats = await getShopImpactStats(shop.id);
-
-  const timeline = await getImpactTimeline(shop.id, 20);
-
-  // Offset stats
-  const offsetAgg = await db.carbonOffset.aggregate({
-    where: { shopId: shop.id, status: "COMPLETED" },
-    _sum: { carbonKg: true },
-    _count: true,
-  });
-
-  // Certificate count
-  const certCount = await db.certificate.count({
-    where: { shopId: shop.id },
-  });
-
-  // Monthly snapshots
-  const snapshots = await db.monthlySnapshot.findMany({
-    where: { shopId: shop.id },
-    orderBy: { month: "asc" },
-    take: 12,
-  });
-
-  const trend = snapshots.map((s) => ({
-    month: s.month,
-    offsetKg: s.totalOffsetKg,
-    treesPlanted: s.totalTreesPlanted,
-    oceanKg: s.totalOceanKg,
-  }));
-
-  // Milestones
-  const totalCarbonKg = stats.carbon.totalKg;
-  const treesPlanted = stats.trees.totalCount;
-  const oceanKg = stats.ocean.totalKg;
-
-  const milestones = [
-    { label: "100 kg CO₂", target: 100, current: totalCarbonKg, icon: "cloud" },
-    { label: "500 kg CO₂", target: 500, current: totalCarbonKg, icon: "cloud-heavy" },
-    { label: "1 tonne CO₂", target: 1000, current: totalCarbonKg, icon: "globe" },
-    { label: "50 arbres", target: 50, current: treesPlanted, icon: "tree" },
-    { label: "100 arbres", target: 100, current: treesPlanted, icon: "tree-alt" },
-    { label: "50 kg plastique", target: 50, current: oceanKg, icon: "wave" },
-  ];
-
-  const appUrl = process.env.SHOPIFY_APP_URL || "";
-  const portalUrl = `${appUrl}/api/impact-portal?shop=${encodeURIComponent(shop.shopDomain)}`;
-
-  return {
-    shop: {
-      name: shop.name ?? shop.shopDomain.replace(".myshopify.com", ""),
-      domain: shop.shopDomain,
-    },
-    stats: {
-      totalCarbonKg: stats.carbon.totalKg,
-      treesPlanted: stats.trees.totalCount,
-      oceanPlasticKg: stats.ocean.totalKg,
-      totalOrders: offsetAgg._count,
-      totalInvested: stats.totalEur,
-    },
-    timeline: timeline.map((t) => ({
-      id: t.id,
-      type: t.type,
-      quantity: t.quantity,
-      orderId: t.orderId,
-      date: t.createdAt.toISOString(),
-    })),
-    trend,
-    certificates: certCount,
-    milestones,
-    portalUrl,
-  };
 };
 
 // ── Page CSS ─────────────────────────────────────────────
@@ -181,7 +186,9 @@ function milestoneIconSvg(type: string, done: boolean): string {
 // ── Component ──────────────────────────────────────────
 
 export default function ImpactPortal() {
-  const { shop, stats, timeline, trend, certificates, milestones, portalUrl } = useLoaderData<typeof loader>();
+  const data = useLoaderData<typeof loader>();
+  if ("error" in data) return <div style={{ padding: 40, textAlign: "center", color: "#9C9488" }}>Erreur de chargement. Rechargez la page.</div>;
+  const { shop, stats, timeline, trend, certificates, milestones, portalUrl } = data;
   const [copied, setCopied] = useState(false);
 
   const copyUrl = useCallback(() => {
