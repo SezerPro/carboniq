@@ -59,4 +59,8 @@ export const logger = {
 
   security: (event: string, details?: Record<string, unknown>) =>
     log("warn", "security", event, details),
+
+  /** Audit log for protected customer data access (GDPR/Shopify compliance) */
+  dataAccess: (action: string, shopId: string, dataType: "email" | "name" | "order" | "certificate" | "offset", resourceId?: string) =>
+    log("info", "audit:data-access", `${action} | type=${dataType}${resourceId ? ` | resource=${resourceId}` : ""}`, { shopId, dataType, resourceId }),
 };

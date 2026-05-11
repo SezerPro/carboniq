@@ -1,6 +1,7 @@
 import type { ActionFunctionArgs } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
+import { logger } from "../lib/security/logger.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { shop, topic, payload } = await authenticate.webhook(request);
@@ -24,6 +25,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     data: { customerEmail: "redacted@anonymized.com" },
   });
 
+  logger.dataAccess("gdpr_redact_customer", shopRecord.id, "email", "redacted");
   console.log(`[RGPD] Customer data redacted for ${customerEmail} in shop ${shop}`);
 
   return new Response();

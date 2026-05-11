@@ -4,6 +4,7 @@ import { createCertificate } from "../lib/certificate/generator.server";
 import { getCorsWriteHeaders, verifyApiRequest, checkRateLimit } from "../lib/security/api-auth.server";
 import db from "../db.server";
 import { isKlaviyoConfigured, syncCustomerToKlaviyo } from "../lib/klaviyo/klaviyo.server";
+import { logger } from "../lib/security/logger.server";
 
 export async function action({ request }: ActionFunctionArgs) {
   const headers = getCorsWriteHeaders(request);
@@ -47,6 +48,9 @@ export async function action({ request }: ActionFunctionArgs) {
       carbonKg,
       amountEur,
     });
+
+    // Audit: log access to protected customer data
+    logger.dataAccess("create_offset_certificate", verification.shopId!, "email", orderId);
 
     const certificate = await createCertificate(offset.id);
 

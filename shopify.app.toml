@@ -9,7 +9,7 @@ embedded = true
 automatically_update_urls_on_dev = true
 
 [webhooks]
-api_version = "2026-04"
+api_version = "2025-10"
 
   [[webhooks.subscriptions]]
   topics = [ "app/scopes_update" ]
@@ -32,10 +32,6 @@ api_version = "2026-04"
   uri = "/webhooks/products/update"
 
   [[webhooks.subscriptions]]
-  topics = [ "orders/create" ]
-  uri = "/webhooks/orders/create"
-
-  [[webhooks.subscriptions]]
   compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
   uri = "/webhooks"
 
@@ -47,6 +43,21 @@ prefix = "apps"
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
 scopes = "read_products,write_products,write_metaobject_definitions,write_metaobjects"
+
+# Protected Customer Data declaration
+# Carboniq stores customer email and name on impact certificates ONLY when:
+#  - The customer voluntarily opts into carbon offset at checkout
+#  - The customer provides their email on the storefront offset form
+# These fields are never pulled from Shopify webhooks or GraphQL.
+# Authoritative declaration: Partner Dashboard > Customer data protection level.
+[access.protected_customer_data]
+customer_data_protection_level = "level_1"
+
+  [[access.protected_customer_data.fields]]
+  field = "email"
+
+  [[access.protected_customer_data.fields]]
+  field = "name"
 
 [auth]
 redirect_urls = [ "https://carboniq-sigma.vercel.app/auth/callback" ]

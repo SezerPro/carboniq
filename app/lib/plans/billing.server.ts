@@ -19,16 +19,46 @@ const PLAN_NAMES: Record<Exclude<PlanTier, "FREE">, string> = {
 import { PRODUCT_LIMITS } from "./gates.server";
 
 /**
+ * Detect whether the merchant store is a Partner Development Store.
+ * Dev stores cannot be charged real money — Shopify rejects non-test charges on them.
+ * Reviewers test apps from dev stores, so this is required to let them validate the upgrade flow.
+ */
+export async function isDevelopmentStore(admin: AdminApi): Promise<boolean> {
+  try {
+    const response = await admin.graphql(
+      `#graphql
+      query {
+        shop {
+          plan {
+            partnerDevelopment
+            shopifyPlus
+          }
+        }
+      }`,
+    );
+    const json = await response.json();
+    return Boolean(json.data?.shop?.plan?.partnerDevelopment);
+  } catch (error) {
+    console.error("[billing] Failed to detect store type, defaulting to test mode:", error);
+    return true;
+  }
+}
+
+/**
  * Create a Shopify AppSubscription via the Billing API.
  * Returns the confirmation URL where the merchant approves the charge.
+ *
+ * `isTest` defaults to `undefined`: when undefined, we detect the store type via GraphQL
+ * (dev store → test charge, production store → real charge). Pass an explicit boolean to override.
  */
 export async function createSubscription(
   admin: AdminApi,
   plan: Exclude<PlanTier, "FREE">,
   shopDomain: string,
   returnUrl: string,
-  isTest: boolean = true, // true for dev, false for production
+  isTest?: boolean,
 ): Promise<{ confirmationUrl: string; subscriptionId: string } | { error: string }> {
+  const useTestCharge = isTest ?? (await isDevelopmentStore(admin));
   const response = await admin.graphql(
     `#graphql
     mutation appSubscriptionCreate(
@@ -62,7 +92,7 @@ export async function createSubscription(
       variables: {
         name: PLAN_NAMES[plan],
         returnUrl,
-        test: isTest,
+        test: useTestCharge,
         trialDays: 0,
         replacementBehavior: "APPLY_IMMEDIATELY",
         lineItems: [

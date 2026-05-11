@@ -1,5 +1,6 @@
 import type { LoaderFunctionArgs } from "react-router";
 import { getCertificateByCode } from "../lib/certificate/certificate.server";
+import { logger } from "../lib/security/logger.server";
 
 const CORS_HEADERS: HeadersInit = {
   "Access-Control-Allow-Origin": "*",
@@ -37,6 +38,9 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       { status: 404, headers: CORS_HEADERS },
     );
   }
+
+  // Audit: log access to protected customer data (masked email)
+  logger.dataAccess("view_certificate", certificate.shop?.id ?? "unknown", "email", certificate.uniqueCode);
 
   return new Response(
     JSON.stringify({

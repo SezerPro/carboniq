@@ -66,12 +66,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const url = new URL(request.url);
     const returnUrl = `${url.origin}/app/pricing`;
 
+    // Test charge is auto-detected by createSubscription based on store type
+    // (dev store → test charge, production store → real charge).
     const result = await createSubscription(
       admin,
       plan as Exclude<PlanTier, "FREE">,
       session.shop,
       returnUrl,
-      process.env.NODE_ENV !== "production", // test in dev, real billing in prod
     );
 
     if ("error" in result) {
