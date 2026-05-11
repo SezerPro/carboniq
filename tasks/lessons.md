@@ -27,10 +27,11 @@ Contexte : Les commits étaient pushés sur carboniq-carbon/carboniq mais Vercel
 Erreur : Les redéploiements Vercel restaient sur un ancien commit
 Règle : Vérifier que Vercel pointe vers le bon repo GitHub. Si on change de repo, reconnecter Vercel.
 
-### [2026-03-31] Leçon : Billing API ne fonctionne pas sur boutique dev
+### [2026-03-31 → mis à jour 2026-05-11] Leçon : Billing API + boutique dev — flag `test` obligatoire
 Contexte : Impossible d'upgrader le plan via l'app sur la boutique de développement
-Erreur : "Les applications de tarification gérée ne peuvent pas utiliser l'API de facturation"
-Règle : Pour tester les plans sur une boutique dev, modifier directement dans la DB (Supabase SQL Editor). La Billing API ne fonctionne que sur de vraies boutiques.
+Erreur initiale : On envoyait `test: false` à `appSubscriptionCreate` parce que `process.env.NODE_ENV === "production"` côté Vercel — Shopify rejette les charges réelles sur les dev stores. On contournait en modifiant la DB à la main.
+Résolution (commit 9fd96e8) : Détecter le type de boutique via GraphQL (`shop.plan.partnerDevelopment`) et passer `test: true` automatiquement pour les Partner Dev Stores, indépendamment de NODE_ENV.
+Règle : Le flag `test` de `appSubscriptionCreate` doit dépendre du **type de boutique** (dev vs prod), jamais de NODE_ENV. Helper `isDevelopmentStore()` dans `billing.server.ts`.
 
 ### [2026-03-31] Leçon : Screenshots Shopify App Store = exactement 1600x900
 Contexte : Les captures d'écran ne se chargeaient pas dans le formulaire
