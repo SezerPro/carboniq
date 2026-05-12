@@ -62,9 +62,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   // ── Upgrade to paid plan ──
   if (intent === "upgrade" && (plan === "STARTER" || plan === "GROWTH" || plan === "PRO" || plan === "SCALE")) {
-    // Build the return URL (merchant comes back here after approving)
-    const url = new URL(request.url);
-    const returnUrl = `${url.origin}/app/pricing`;
+    // Return URL must point to the Shopify admin embedded app URL so the merchant
+    // lands back inside the admin iframe with a valid session after approving.
+    // Passing the raw Vercel URL would drop them on the unauthenticated login page.
+    const storeHandle = session.shop.replace(".myshopify.com", "");
+    const returnUrl = `https://admin.shopify.com/store/${storeHandle}/apps/${process.env.SHOPIFY_API_KEY}/app/pricing`;
 
     // Test charge is auto-detected by createSubscription based on store type
     // (dev store → test charge, production store → real charge).
