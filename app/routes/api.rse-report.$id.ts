@@ -1,4 +1,6 @@
 import type { LoaderFunctionArgs } from "react-router";
+import { authenticate } from "../shopify.server";
+import prisma from "../db.server";
 import { getReport } from "../lib/report/rse.server";
 
 const CORS_HEADERS: HeadersInit = {
@@ -21,23 +23,30 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
   }
 
-  const reportId = params.id;
-  const url = new URL(request.url);
-  const shopDomain = url.searchParams.get("shop");
+  // Verify App Proxy signature — shop comes from authenticated session, never trust ?shop= from URL
+  let shopDomain: string;
+  try {
+    const { session } = await authenticate.public.appProxy(request);
+    if (!session?.shop) return silentResponse();
+    shopDomain = session.shop;
+  } catch {
+    return silentResponse();
+  }
 
-  if (!reportId || !shopDomain) {
+  const reportId = params.id;
+  if (!reportId) {
     return silentResponse();
   }
 
   try {
     const report = await getReport(reportId);
-
     if (!report) {
       return silentResponse();
     }
 
-    // Verify the report belongs to the requesting shop (cross-tenant protection)
-    if (report.shopId !== shopDomain && report.shop?.shopDomain !== shopDomain) {
+    // Cross-tenant protection: resolve the requesting shop's internal ID and compare with report.shopId
+    const shop = await prisma.shop.findUnique({ where: { shopDomain } });
+    if (!shop || report.shopId !== shop.id) {
       return silentResponse();
     }
 

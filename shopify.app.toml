@@ -31,9 +31,19 @@ api_version = "2025-10"
   topics = [ "products/update" ]
   uri = "/webhooks/products/update"
 
+  # GDPR / Compliance webhooks — each topic must route to its dedicated handler
+  # so the redaction / data-request logic actually runs (not the catch-all /webhooks).
   [[webhooks.subscriptions]]
-  compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
-  uri = "/webhooks"
+  compliance_topics = [ "customers/data_request" ]
+  uri = "/webhooks/customers/data_request"
+
+  [[webhooks.subscriptions]]
+  compliance_topics = [ "customers/redact" ]
+  uri = "/webhooks/customers/redact"
+
+  [[webhooks.subscriptions]]
+  compliance_topics = [ "shop/redact" ]
+  uri = "/webhooks/shop/redact"
 
 [app_proxy]
 url = "https://carboniq-sigma.vercel.app"

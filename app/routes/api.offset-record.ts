@@ -1,7 +1,8 @@
 import type { ActionFunctionArgs } from "react-router";
+import { authenticate } from "../shopify.server";
 import { recordOffset } from "../lib/offset/checkout.server";
 import { createCertificate } from "../lib/certificate/generator.server";
-import { getCorsWriteHeaders, verifyApiRequest, checkRateLimit } from "../lib/security/api-auth.server";
+import { getCorsWriteHeaders, checkRateLimit } from "../lib/security/api-auth.server";
 import db from "../db.server";
 import { isKlaviyoConfigured, syncCustomerToKlaviyo } from "../lib/klaviyo/klaviyo.server";
 import { logger } from "../lib/security/logger.server";
@@ -13,35 +14,43 @@ export async function action({ request }: ActionFunctionArgs) {
     return new Response(null, { status: 204, headers });
   }
 
+  // Verify App Proxy signature — shop comes from authenticated session, never trust shop in body
+  let shopDomain: string;
+  try {
+    const { session } = await authenticate.public.appProxy(request);
+    if (!session?.shop) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers });
+    }
+    shopDomain = session.shop;
+  } catch {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers });
+  }
+
   try {
     const body = await request.json();
-    const { shop, orderId, orderName, customerEmail, carbonKg, amountEur } = body as {
-      shop?: string; orderId?: string; orderName?: string;
+    const { orderId, orderName, customerEmail, carbonKg, amountEur } = body as {
+      orderId?: string; orderName?: string;
       customerEmail?: string; carbonKg?: number; amountEur?: number;
     };
 
-    if (!shop || !orderId || carbonKg == null || amountEur == null) {
+    if (!orderId || carbonKg == null || amountEur == null) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), { status: 400, headers });
     }
 
-    // Rate limit
-    const rl = checkRateLimit(`offset-record:${shop}`, "write");
+    // Rate limit per shop
+    const rl = checkRateLimit(`offset-record:${shopDomain}`, "write");
     if (!rl.allowed) {
       return new Response(JSON.stringify({ error: "Rate limit exceeded" }), { status: 429, headers });
     }
 
-    // Verify shop + HMAC signature
-    const bodyStr = JSON.stringify({ shop, orderId, orderName, customerEmail, carbonKg, amountEur });
-    const verification = await verifyApiRequest(request, shop, {
-      requireSignature: true,
-      body: bodyStr,
-    });
-    if (!verification.valid) {
-      return new Response(JSON.stringify({ error: verification.error }), { status: 403, headers });
+    // Resolve the authenticated shop's internal ID
+    const shopRecord = await db.shop.findUnique({ where: { shopDomain } });
+    if (!shopRecord) {
+      return new Response(JSON.stringify({ error: "Shop not found" }), { status: 404, headers });
     }
 
     const offset = await recordOffset({
-      shopId: verification.shopId!,
+      shopId: shopRecord.id,
       orderId,
       orderName,
       customerEmail,
@@ -50,17 +59,16 @@ export async function action({ request }: ActionFunctionArgs) {
     });
 
     // Audit: log access to protected customer data
-    logger.dataAccess("create_offset_certificate", verification.shopId!, "email", orderId);
+    logger.dataAccess("create_offset_certificate", shopRecord.id, "email", orderId);
 
     const certificate = await createCertificate(offset.id);
 
     // Fire-and-forget: sync to Klaviyo if configured
     void (async () => {
       try {
-        const shopRecord = await db.shop.findUnique({ where: { id: verification.shopId! } });
-        if (shopRecord && isKlaviyoConfigured(shopRecord)) {
+        if (isKlaviyoConfigured(shopRecord)) {
           const totalOffsets = await db.carbonOffset.aggregate({
-            where: { shopId: verification.shopId!, status: "COMPLETED" },
+            where: { shopId: shopRecord.id, status: "COMPLETED" },
             _sum: { carbonKg: true },
             _count: true,
           });

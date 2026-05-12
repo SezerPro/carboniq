@@ -1,4 +1,5 @@
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
+import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 import {
   calculateOffsetCost,
@@ -6,7 +7,7 @@ import {
   getOrderOffset,
 } from "../lib/offset/offset.server";
 import { generateCertificate } from "../lib/certificate/certificate.server";
-import { getCorsWriteHeaders, verifyApiRequest, checkRateLimit } from "../lib/security/api-auth.server";
+import { getCorsWriteHeaders, checkRateLimit } from "../lib/security/api-auth.server";
 
 /**
  * GET /api/offset?shop=xxx&order_id=xxx
@@ -20,24 +21,29 @@ export async function loader({ request }: LoaderFunctionArgs) {
     return new Response(null, { status: 204, headers });
   }
 
+  // Verify App Proxy signature — shop comes from authenticated session, never trust ?shop= from URL
+  let shopDomain: string;
+  try {
+    const { session } = await authenticate.public.appProxy(request);
+    if (!session?.shop) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers });
+    }
+    shopDomain = session.shop;
+  } catch {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers });
+  }
+
   const url = new URL(request.url);
-  const shopDomain = url.searchParams.get("shop");
   const orderId = url.searchParams.get("order_id");
 
-  if (!shopDomain || !orderId) {
-    return new Response(JSON.stringify({ error: "Missing shop or order_id parameter" }), { status: 400, headers });
+  if (!orderId) {
+    return new Response(JSON.stringify({ error: "Missing order_id parameter" }), { status: 400, headers });
   }
 
   // Rate limit
   const rl = checkRateLimit(`offset-read:${shopDomain}`, "read");
   if (!rl.allowed) {
     return new Response(JSON.stringify({ error: "Rate limit exceeded" }), { status: 429, headers });
-  }
-
-  // Verify shop
-  const verification = await verifyApiRequest(request, shopDomain);
-  if (!verification.valid) {
-    return new Response(JSON.stringify({ error: verification.error }), { status: 403, headers });
   }
 
   const shop = await prisma.shop.findUnique({ where: { shopDomain } });
@@ -97,8 +103,19 @@ export async function action({ request }: ActionFunctionArgs) {
     );
   }
 
+  // Verify App Proxy signature — shop comes from authenticated session, never trust shop in body
+  let shopDomain: string;
+  try {
+    const { session } = await authenticate.public.appProxy(request);
+    if (!session?.shop) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers });
+    }
+    shopDomain = session.shop;
+  } catch {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers });
+  }
+
   let body: {
-    shop?: string;
     orderId?: string;
     orderName?: string;
     customerEmail?: string;
@@ -114,26 +131,16 @@ export async function action({ request }: ActionFunctionArgs) {
     );
   }
 
-  const { shop: shopDomain, orderId, orderName, customerEmail, carbonKg } = body;
+  const { orderId, orderName, customerEmail, carbonKg } = body;
 
-  if (!shopDomain || !orderId || !carbonKg) {
-    return new Response(JSON.stringify({ error: "Missing required fields: shop, orderId, carbonKg" }), { status: 400, headers });
+  if (!orderId || !carbonKg) {
+    return new Response(JSON.stringify({ error: "Missing required fields: orderId, carbonKg" }), { status: 400, headers });
   }
 
   // Rate limit writes
   const rl = checkRateLimit(`offset-write:${shopDomain}`, "write");
   if (!rl.allowed) {
     return new Response(JSON.stringify({ error: "Rate limit exceeded" }), { status: 429, headers });
-  }
-
-  // Verify shop exists, plan active, and HMAC signature
-  const bodyStr = JSON.stringify(body);
-  const verification = await verifyApiRequest(request, shopDomain, {
-    requireSignature: true,
-    body: bodyStr,
-  });
-  if (!verification.valid) {
-    return new Response(JSON.stringify({ error: verification.error }), { status: 403, headers });
   }
 
   const shop = await prisma.shop.findUnique({ where: { shopDomain } });

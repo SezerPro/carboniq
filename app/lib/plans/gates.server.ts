@@ -8,6 +8,7 @@ export type { FeatureGate, PlanInfo } from "./constants";
 
 import type { PlanTier } from "./constants";
 import { hasAccess, FEATURES, PLANS } from "./constants";
+import db from "../../db.server";
 
 // Map database plan values to tiers (server-only, reads DB values)
 export function getPlanTier(plan?: string | null, status?: string | null): PlanTier {
@@ -36,4 +37,49 @@ export function checkFeature(userPlan: PlanTier, featureId: string) {
   const allowed = hasAccess(userPlan, feature.requiredPlan);
   const upgradePlan = allowed ? undefined : PLANS.find((p) => p.tier === feature.requiredPlan);
   return { allowed, currentPlan: userPlan, requiredPlan: feature.requiredPlan, featureLabel: feature.label, upgradePlan };
+}
+
+/**
+ * Load the current plan tier for a shop by its `shopDomain` (e.g. `xxx.myshopify.com`).
+ * Returns "FREE" if the shop record is missing or the subscription is cancelled/expired.
+ */
+export async function getPlanForShopDomain(shopDomain: string): Promise<PlanTier> {
+  const shop = await db.shop.findUnique({
+    where: { shopDomain },
+    select: { plan: true, planStatus: true },
+  });
+  return getPlanTier(shop?.plan, shop?.planStatus);
+}
+
+/**
+ * Server-side gate for paid feature routes. Throws a Response (HTTP 402)
+ * if the authenticated shop does not have access to the requested feature.
+ *
+ * Usage in a loader/action:
+ *   const { session } = await authenticate.admin(request);
+ *   await requireFeature(session.shop, "scope3");
+ *
+ * The thrown Response is caught by the React Router runtime and surfaced
+ * either as a JSON error (for fetcher.submit) or as an error boundary page.
+ */
+export async function requireFeature(shopDomain: string, featureId: string): Promise<PlanTier> {
+  const tier = await getPlanForShopDomain(shopDomain);
+  const feature = FEATURES[featureId];
+  if (!feature) return tier;
+  if (!hasAccess(tier, feature.requiredPlan)) {
+    throw new Response(
+      JSON.stringify({
+        error: "upgrade_required",
+        feature: featureId,
+        featureLabel: feature.label,
+        requiredPlan: feature.requiredPlan,
+        currentPlan: tier,
+      }),
+      {
+        status: 402,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+  }
+  return tier;
 }

@@ -1,4 +1,5 @@
 import type { LoaderFunctionArgs } from "react-router";
+import { authenticate } from "../shopify.server";
 import { calculateOffsetForOrder } from "../lib/offset/checkout.server";
 
 const CORS_HEADERS: HeadersInit = {
@@ -13,14 +14,25 @@ export async function loader({ request }: LoaderFunctionArgs) {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
   }
 
+  // Verify App Proxy signature — shop comes from authenticated session, never trust ?shop= from URL
+  let shop: string;
+  try {
+    const { session } = await authenticate.public.appProxy(request);
+    if (!session?.shop) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: CORS_HEADERS });
+    }
+    shop = session.shop;
+  } catch {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: CORS_HEADERS });
+  }
+
   try {
     const url = new URL(request.url);
-    const shop = url.searchParams.get("shop");
     const itemsParam = url.searchParams.get("items");
 
-    if (!shop || !itemsParam) {
+    if (!itemsParam) {
       return new Response(
-        JSON.stringify({ error: "Missing required parameters: shop, items" }),
+        JSON.stringify({ error: "Missing required parameter: items" }),
         { status: 400, headers: CORS_HEADERS },
       );
     }

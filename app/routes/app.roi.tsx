@@ -3,14 +3,15 @@ import { useLoaderData, Link } from "react-router";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
+import { requireFeature } from "../lib/plans/gates.server";
 import { BASE_CSS, INIT_SCRIPT, COLORS } from "../lib/ui/shared-styles";
 
 // ── Loader ─────────────────────────────────────────────
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const { session } = await authenticate.admin(request);
+  await requireFeature(session.shop, "roi");
   try {
-    const { session } = await authenticate.admin(request);
-
     const shop = await db.shop.findUnique({
       where: { shopDomain: session.shop },
       include: {

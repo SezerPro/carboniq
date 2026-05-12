@@ -1,4 +1,5 @@
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
+import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 import {
   getActiveTest,
@@ -20,14 +21,25 @@ export async function loader({ request }: LoaderFunctionArgs) {
     return new Response(null, { status: 204, headers: CORS_PUBLIC });
   }
 
+  // Verify App Proxy signature — shop comes from authenticated session, never trust ?shop= from URL
+  let shopDomain: string;
+  try {
+    const { session } = await authenticate.public.appProxy(request);
+    if (!session?.shop) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: CORS_PUBLIC });
+    }
+    shopDomain = session.shop;
+  } catch {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: CORS_PUBLIC });
+  }
+
   try {
     const url = new URL(request.url);
-    const shopDomain = url.searchParams.get("shop");
     const testType = url.searchParams.get("test_type");
 
-    if (!shopDomain || !testType) {
+    if (!testType) {
       return new Response(
-        JSON.stringify({ error: "Missing shop or test_type parameter" }),
+        JSON.stringify({ error: "Missing test_type parameter" }),
         { status: 400, headers: CORS_PUBLIC },
       );
     }
@@ -84,6 +96,18 @@ export async function action({ request }: ActionFunctionArgs) {
     return new Response(null, { status: 204, headers });
   }
 
+  // Verify App Proxy signature — shop comes from authenticated session, never trust shop in body
+  let shopDomain: string;
+  try {
+    const { session } = await authenticate.public.appProxy(request);
+    if (!session?.shop) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers });
+    }
+    shopDomain = session.shop;
+  } catch {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers });
+  }
+
   try {
     let body: {
       testId?: string;
@@ -101,12 +125,11 @@ export async function action({ request }: ActionFunctionArgs) {
       );
     }
 
-    const { testId, variant, event, revenue, shop: shopDomain } = body as {
+    const { testId, variant, event, revenue } = body as {
       testId?: string;
       variant?: "A" | "B";
       event?: "impression" | "conversion";
       revenue?: number;
-      shop?: string;
     };
 
     if (!testId || !variant || !event) {
@@ -116,17 +139,15 @@ export async function action({ request }: ActionFunctionArgs) {
       );
     }
 
-    // Verify the test belongs to the requesting shop
-    if (shopDomain) {
-      const shop = await prisma.shop.findUnique({ where: { shopDomain } });
-      if (shop) {
-        const test = await prisma.aBTest.findUnique({ where: { id: testId } });
-        if (test && test.shopId !== shop.id) {
-          return new Response(
-            JSON.stringify({ error: "Test does not belong to this shop" }),
-            { status: 403, headers },
-          );
-        }
+    // Cross-tenant guard: verify the test belongs to the authenticated shop
+    const shop = await prisma.shop.findUnique({ where: { shopDomain } });
+    if (shop) {
+      const test = await prisma.aBTest.findUnique({ where: { id: testId } });
+      if (test && test.shopId !== shop.id) {
+        return new Response(
+          JSON.stringify({ error: "Test does not belong to this shop" }),
+          { status: 403, headers },
+        );
       }
     }
 

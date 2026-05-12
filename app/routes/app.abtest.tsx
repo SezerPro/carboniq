@@ -8,6 +8,7 @@ import { useLoaderData, useFetcher } from "react-router";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
+import { requireFeature } from "../lib/plans/gates.server";
 import {
   createABTest,
   endTest,
@@ -20,6 +21,7 @@ import { BASE_CSS, INIT_SCRIPT, COLORS } from "../lib/ui/shared-styles";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
+  await requireFeature(session.shop, "abtest");
 
   const shop = await db.shop.findUnique({
     where: { shopDomain: session.shop },
@@ -73,6 +75,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { session } = await authenticate.admin(request);
+  await requireFeature(session.shop, "abtest");
   const formData = await request.formData();
   const intent = formData.get("intent");
 

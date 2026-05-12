@@ -206,12 +206,14 @@
     var shopDomain = '{{ shop.permanent_domain }}';
     var showCounters = {{ block.settings.show_counters | json }};
     var showCta = {{ block.settings.show_cta | json }};
-    var appUrl = 'https://{{ shop.metafields.carboniq.app_url | default: request.host }}';
+    /* Always route through the Shopify App Proxy so requests are signed and
+       reach the Carboniq backend regardless of storefront/Vercel domain. */
+    var apiUrl = '/apps/carboniq/api/impact-stats';
 
     // Show wrapper with skeleton
     wrapper.style.display = 'block';
 
-    fetch(appUrl + '/api/impact-stats?shop=' + encodeURIComponent(shopDomain))
+    fetch(apiUrl + '?shop=' + encodeURIComponent(shopDomain))
       .then(function(res) { return res.json(); })
       .then(function(data) {
         // Silent failure

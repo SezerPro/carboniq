@@ -1,4 +1,5 @@
 import type { LoaderFunctionArgs } from "react-router";
+import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 import type { CarbonLabel } from "@prisma/client";
 import { getT, SUPPORTED_LOCALES, type Locale } from "../lib/i18n/translations";
@@ -49,15 +50,25 @@ export async function loader({ request }: LoaderFunctionArgs) {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
   }
 
-  const url = new URL(request.url);
-  const shopDomain = url.searchParams.get("shop");
-  const productId = url.searchParams.get("product_id");
-  const queryLocale = url.searchParams.get("locale");
-
-  if (!shopDomain || !productId) {
+  // Verify App Proxy signature — shop comes from authenticated session, never trust ?shop= from URL
+  let shopDomain: string;
+  try {
+    const { session } = await authenticate.public.appProxy(request);
+    if (!session?.shop) return silentResponse();
+    shopDomain = session.shop;
+  } catch {
     return silentResponse();
   }
 
+  const url = new URL(request.url);
+  const productId = url.searchParams.get("product_id");
+  const queryLocale = url.searchParams.get("locale");
+
+  if (!productId) {
+    return silentResponse();
+  }
+
+  // Force Pill style for FREE plan (badge styles Leaf/Minimal/Detailed are Starter+)
   // Verify shop exists and plan is active
   const shop = await prisma.shop.findUnique({
     where: { shopDomain },
@@ -92,6 +103,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const t = getT(locale);
   const labelKey = LABEL_KEY_MAP[product.carbonLabel];
 
+  // FREE plan can only display the "pill" badge style; Starter+ unlock all 4 styles.
+  // The client reads forceStyle to override the merchant's theme setting if needed.
+  const isFreePlan = shop.plan === "FREE" || (shop.planStatus !== "ACTIVE" && shop.planStatus !== "TRIALING");
+  const forceStyle = isFreePlan ? "pill" : null;
+
   return new Response(
     JSON.stringify({
       carbonScoreKg: product.carbonScoreKg,
@@ -100,6 +116,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       labelText: t(labelKey),
       offsetText: t("offset"),
       sourceText: "ADEME",
+      forceStyle,
       badge: {
         color: badge.color,
         bgColor: badge.bgColor,

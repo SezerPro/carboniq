@@ -3,13 +3,14 @@ import { useLoaderData, useNavigation, Form } from "react-router";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
+import { requireFeature } from "../lib/plans/gates.server";
 import { scanShopCompliance, getLatestScan, getCompliantTemplates, getScanHistory } from "../lib/compliance/scanner.server";
 import { BASE_CSS, INIT_SCRIPT, COLORS } from "../lib/ui/shared-styles";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const { session } = await authenticate.admin(request);
+  await requireFeature(session.shop, "compliance");
   try {
-    const { session } = await authenticate.admin(request);
-
     const shop = await db.shop.findUnique({ where: { shopDomain: session.shop } });
     if (!shop) return { scan: null, templates: getCompliantTemplates(), history: [], score: 100 };
 
@@ -56,6 +57,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { session, admin } = await authenticate.admin(request);
+  await requireFeature(session.shop, "compliance");
   const formData = await request.formData();
   const intent = formData.get("intent");
 

@@ -1,4 +1,5 @@
 import type { LoaderFunctionArgs } from "react-router";
+import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 
 const corsHeaders: HeadersInit = {
@@ -142,11 +143,20 @@ export async function loader({ request }: LoaderFunctionArgs) {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
 
+  // Verify App Proxy signature — shop comes from authenticated session, never trust ?shop= from URL
+  let shopDomain: string;
+  try {
+    const { session } = await authenticate.public.appProxy(request);
+    if (!session?.shop) return silentResponse();
+    shopDomain = session.shop;
+  } catch {
+    return silentResponse();
+  }
+
   const url = new URL(request.url);
-  const shopDomain = url.searchParams.get("shop");
   const productId = url.searchParams.get("product_id");
 
-  if (!shopDomain || !productId) {
+  if (!productId) {
     return silentResponse();
   }
 

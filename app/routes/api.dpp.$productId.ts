@@ -1,4 +1,5 @@
 import type { LoaderFunctionArgs } from "react-router";
+import { authenticate } from "../shopify.server";
 import { getDPPData } from "../lib/dpp/generator.server";
 
 const corsHeaders: HeadersInit = {
@@ -17,15 +18,31 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
 
-  const url = new URL(request.url);
-  const shop = url.searchParams.get("shop");
+  // Verify App Proxy signature — shop comes from authenticated session, never trust ?shop= from URL
+  let shop: string;
+  try {
+    const { session } = await authenticate.public.appProxy(request);
+    if (!session?.shop) {
+      return new Response(
+        renderErrorPage("Accès non autorisé", "Cette page doit être accédée via la boutique du marchand."),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" } },
+      );
+    }
+    shop = session.shop;
+  } catch {
+    return new Response(
+      renderErrorPage("Accès non autorisé", "Cette page doit être accédée via la boutique du marchand."),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" } },
+    );
+  }
+
   const productId = params.productId;
 
-  if (!shop || !productId) {
+  if (!productId) {
     return new Response(
       renderErrorPage(
         "Paramètres manquants",
-        "Le shop et l'identifiant produit sont requis.",
+        "L'identifiant produit est requis.",
       ),
       {
         status: 400,

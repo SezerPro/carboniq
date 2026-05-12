@@ -60,6 +60,13 @@
     var customAppUrl = '{{ block.settings.app_url }}'.trim();
     var showSource = {{ block.settings.show_methodology | default: false }};
 
+    /* Server may force a style override (e.g. FREE plan is restricted to "pill"). */
+    var applyForceStyle = function(data) {
+      if (data && data.forceStyle && data.forceStyle !== badgeStyle) {
+        badgeStyle = data.forceStyle;
+      }
+    };
+
     var apiUrl;
     if (customAppUrl && customAppUrl.length > 5) {
       apiUrl = customAppUrl.replace(/\/$/, '') + '/api/carbon-score';
@@ -78,6 +85,8 @@
           wrapper.style.display = 'none';
           return;
         }
+
+        applyForceStyle(data);
 
         var score = data.carbonScoreKg;
         var label = data.carbonLabel;
