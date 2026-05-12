@@ -55,7 +55,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
     await db.shop.update({
       where: { id: shop.id },
-      data: { plan: "STARTER", planStatus: "CANCELED" },
+      data: { plan: "FREE", planStatus: "CANCELED" },
     });
     return { success: true, plan: "FREE" };
   }
