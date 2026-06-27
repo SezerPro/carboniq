@@ -140,7 +140,7 @@ const PRESETS = [
   { name: "Voiture vs Netflix", desc: "Quelle équivalence convertit le mieux ?", type: "equivalence",
     a: '{"equivalence":"car","text":"= {value} km en voiture","icon":"car"}', b: '{"equivalence":"netflix","text":"= {value}h de streaming","icon":"tv"}' },
   { name: "Avant vs Après panier", desc: "Testez le placement de l'offset", type: "offset_placement",
-    a: '{"position":"before_add_to_cart","label":"Compenser"}', b: '{"position":"after_add_to_cart","label":"Rendre neutre"}' },
+    a: '{"position":"before_add_to_cart","label":"Compenser"}', b: '{"position":"after_add_to_cart","label":"Contribuer"}' },
 ];
 
 const PRESET_ICONS = [
