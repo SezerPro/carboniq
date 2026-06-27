@@ -49,10 +49,11 @@
 ### Infrastructure Shopify
 | Composant | Détail |
 |---|---|
-| App | Embedded, OAuth, App Proxy (`/apps/carboniq`) |
+| App | Embedded, token exchange + managed install (tokens expirables), App Proxy (`/apps/carboniq`) |
 | Extensions | Theme extension `carbon-badge` — blocs Liquid |
-| Webhooks | `products/create`, `products/update`, `products/delete`, `app/uninstalled` |
-| Scopes | `read_products`, `write_products`, `write_metaobjects` |
+| Webhooks | `products/create\|update\|delete`, `app/uninstalled`, `app/scopes_update` + RGPD : `customers/data_request`, `customers/redact`, `shop/redact` |
+| Scopes | `read_products`, `write_products`, `write_metaobject_definitions`, `write_metaobjects` |
+| API version | Admin API `2026-04` (extension `carbon-badge` : `2025-04` — à aligner) |
 
 ---
 
@@ -243,11 +244,15 @@ npx prisma generate && npm run typecheck && npm run lint && npm run build
 | `products/update` | `webhooks.products.update.ts` | ✅ Actif |
 | `products/delete` | `webhooks.products.delete.ts` | ✅ Actif |
 | `app/uninstalled` | `webhooks.app.uninstalled.ts` | ✅ Actif |
+| `app/scopes_update` | `webhooks.app.scopes_update.tsx` | ✅ Actif |
+| `customers/data_request` (RGPD) | `webhooks.customers.data_request.ts` | ✅ Actif |
+| `customers/redact` (RGPD) | `webhooks.customers.redact.ts` | ✅ Actif |
+| `shop/redact` (RGPD) | `webhooks.shop.redact.ts` | ✅ Actif |
 
 ### GraphQL Shopify
 - Toujours utiliser les types générés par codegen (jamais de types manuels pour les réponses GraphQL)
 - Après modification d'une query/mutation : `npm run codegen`
-- Scopes disponibles : `read_products`, `write_products`, `write_metaobjects` — ne pas demander plus
+- Scopes disponibles : `read_products`, `write_products`, `write_metaobject_definitions`, `write_metaobjects` — ne pas demander plus
 
 ---
 
