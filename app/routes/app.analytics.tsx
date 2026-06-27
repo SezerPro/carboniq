@@ -230,7 +230,7 @@ export default function Analytics() {
             { accent: "#4A7C59", label: "Empreinte totale", val: fmtKg(analytics.totalCarbonKg), unit: "kgCO₂e", sub: "tous produits confondus" },
             { accent: "#2A7A9B", label: "Score moyen", val: fmtKg(analytics.avgCarbonKg), unit: "kgCO₂e", sub: "par produit" },
             { accent: "#6D4DB8", label: "Compensé", val: fmtKg(analytics.offsetStats.totalOffsetKg), unit: "kgCO₂e", sub: `${offsetPct}% de l'empreinte` },
-            { accent: netCarbon > 0 ? "#EA580C" : "#15803D", label: "Empreinte nette", val: fmtKg(Math.abs(netCarbon)), unit: "kgCO₂e", sub: netCarbon <= 0 ? "Neutre carbone !" : "restant à compenser" },
+            { accent: netCarbon > 0 ? "#EA580C" : "#15803D", label: "Empreinte nette", val: fmtKg(Math.abs(netCarbon)), unit: "kgCO₂e", sub: netCarbon <= 0 ? "Empreinte compensée" : "restant à compenser" },
           ].map((m, i) => (
             <div className="ca-metric ca-anim" key={i} style={{ animationDelay: `${.03 + i * .04}s` }}>
               <div className="ca-metric-accent" style={{ background: m.accent }} />
