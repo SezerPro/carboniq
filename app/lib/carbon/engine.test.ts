@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { computeCarbonKg, computeLabel } from "./engine.server";
-import type { EmissionFactor, CarbonLabel } from "@prisma/client";
+import type { EmissionFactor } from "@prisma/client";
 
 // ── Helper: create a mock EmissionFactor ──────────────
 

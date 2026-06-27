@@ -188,8 +188,8 @@ function milestoneIconSvg(type: string, done: boolean): string {
 
 export default function ImpactPortal() {
   const data = useLoaderData<typeof loader>();
-  if ("error" in data) return <div style={{ padding: 40, textAlign: "center", color: "#9C9488" }}>Erreur de chargement. Rechargez la page.</div>;
-  const { shop, stats, timeline, trend, certificates, milestones, portalUrl } = data;
+  // Hooks must run unconditionally, before any early return (rules-of-hooks).
+  const portalUrl = "error" in data ? "" : data.portalUrl;
   const [copied, setCopied] = useState(false);
 
   const copyUrl = useCallback(() => {
@@ -198,6 +198,9 @@ export default function ImpactPortal() {
       setTimeout(() => setCopied(false), 2000);
     });
   }, [portalUrl]);
+
+  if ("error" in data) return <div style={{ padding: 40, textAlign: "center", color: "#9C9488" }}>Erreur de chargement. Rechargez la page.</div>;
+  const { shop, stats, timeline, trend, certificates, milestones } = data;
 
   if (!shop || !stats) {
     return (

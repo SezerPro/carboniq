@@ -236,11 +236,9 @@ const PAGE_CSS = `
 
 export default function Pricing() {
   const data = useLoaderData<typeof loader>();
-  if ("error" in data) return <div style={{ padding: 40, textAlign: "center", color: COLORS.textMuted }}>Erreur de chargement. Rechargez la page.</div>;
-  const { currentTier } = data;
+  // Hooks must run unconditionally, before any early return (rules-of-hooks).
   const fetcher = useFetcher<typeof action>();
   const shopify = useAppBridge();
-  const isChanging = fetcher.state !== "idle";
 
   useEffect(() => {
     if (fetcher.data && "confirmationUrl" in fetcher.data) {
@@ -253,6 +251,10 @@ export default function Pricing() {
       shopify.toast.show(`Erreur : ${fetcher.data.error}`);
     }
   }, [fetcher.data, shopify]);
+
+  if ("error" in data) return <div style={{ padding: 40, textAlign: "center", color: COLORS.textMuted }}>Erreur de chargement. Rechargez la page.</div>;
+  const { currentTier } = data;
+  const isChanging = fetcher.state !== "idle";
 
   const handleSelect = (tier: PlanTier) => {
     if (tier === currentTier) return;

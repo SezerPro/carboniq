@@ -25,7 +25,7 @@ export default function App() {
           Carboniq — Bilan carbone pour votre boutique
         </h1>
         <p className={styles.text}>
-          Calculez, affichez et compensez l'empreinte CO₂ de vos produits.
+          Calculez, affichez et compensez l&apos;empreinte CO₂ de vos produits.
           Conforme EU Green Claims 2027.
         </p>
         {showForm && (
@@ -52,7 +52,7 @@ export default function App() {
           </li>
           <li>
             <strong>Compensation carbone</strong>. Proposez à vos clients de
-            compenser l'impact de leur commande avec un certificat d'impact
+            compenser l&apos;impact de leur commande avec un certificat d&apos;impact
             vérifiable.
           </li>
           <li>

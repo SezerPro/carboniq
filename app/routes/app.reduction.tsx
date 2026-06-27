@@ -349,10 +349,19 @@ const CATEGORY_SVGS: Record<string, string> = {
 
 export default function Reduction() {
   const data = useLoaderData<typeof loader>();
-  if ("error" in data) return <div style={{ padding: 40, textAlign: "center", color: "#9C9488" }}>Erreur de chargement. Rechargez la page.</div>;
-  const { tips, progress, goal } = data;
+  // Hooks must run unconditionally, before any early return (rules-of-hooks).
   const fetcher = useFetcher<typeof action>();
   const goalFetcher = useFetcher<typeof action>();
+  const [goalTargetPct, setGoalTargetPct] = useState("30");
+  const [goalDeadline, setGoalDeadline] = useState("");
+
+  const handleRegenerate = useCallback(() => {
+    fetcher.submit({ intent: "regenerate" }, { method: "POST" });
+  }, [fetcher]);
+
+  if ("error" in data) return <div style={{ padding: 40, textAlign: "center", color: "#9C9488" }}>Erreur de chargement. Rechargez la page.</div>;
+  const { tips, progress, goal } = data;
+
   const isRegenerating =
     fetcher.state !== "idle" &&
     fetcher.formData?.get("intent") === "regenerate";
@@ -362,13 +371,6 @@ export default function Reduction() {
   const isDeletingGoal =
     goalFetcher.state !== "idle" &&
     goalFetcher.formData?.get("intent") === "delete-goal";
-
-  const [goalTargetPct, setGoalTargetPct] = useState("30");
-  const [goalDeadline, setGoalDeadline] = useState("");
-
-  const handleRegenerate = useCallback(() => {
-    fetcher.submit({ intent: "regenerate" }, { method: "POST" });
-  }, [fetcher]);
 
   const ringPct = progress ? Math.min(100, progress.reductionScore) : 0;
   const circumference = 2 * Math.PI * 54;
@@ -401,7 +403,7 @@ export default function Reduction() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
           <div>
             <h1 className="cq-display" style={{ fontSize: 28, color: COLORS.dark }}>
-              Réduire l'empreinte
+              Réduire l&apos;empreinte
             </h1>
             <p style={{ fontSize: 13, color: COLORS.textMuted, marginTop: 4 }}>
               Suggestions personnalisées pour diminuer votre impact carbone
