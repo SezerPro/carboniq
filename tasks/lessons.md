@@ -33,6 +33,24 @@ Erreur initiale : On envoyait `test: false` à `appSubscriptionCreate` parce que
 Résolution (commit 9fd96e8) : Détecter le type de boutique via GraphQL (`shop.plan.partnerDevelopment`) et passer `test: true` automatiquement pour les Partner Dev Stores, indépendamment de NODE_ENV.
 Règle : Le flag `test` de `appSubscriptionCreate` doit dépendre du **type de boutique** (dev vs prod), jamais de NODE_ENV. Helper `isDevelopmentStore()` dans `billing.server.ts`.
 
+### [2026-08-08] Leçon : Prisma + Supabase = tables publiques par défaut
+Contexte : Alerte critique Supabase « rls_disabled_in_public » sur le projet carboniq
+(ekbwnncenxbstpfcyxwq). Les 15 tables du schéma `public` — dont `Session` et `Shop`,
+qui stockent les **access tokens Shopify** de chaque marchand, plus les emails clients
+de `Certificate` / `CarbonOffset` — étaient exposées en lecture ET écriture via
+l'API Data (`/rest/v1/<Table>`) à quiconque détenait la clé anon du projet.
+Erreur : on a supposé qu'utiliser Prisma via le pooler Postgres mettait la DB à l'abri.
+C'est faux — Supabase expose `public` via PostgREST **en parallèle** de la connexion
+Postgres, et son `ALTER DEFAULT PRIVILEGES` accorde tous les droits à `anon` /
+`authenticated` sur chaque table créée. Prisma, lui, n'active jamais la RLS.
+Règle : toute migration créant une table finit par `ENABLE ROW LEVEL SECURITY`, sans
+policy (Carboniq n'utilise pas l'API Data). Jamais de `FORCE ROW LEVEL SECURITY` :
+Prisma se connecte en `postgres`, propriétaire des tables, et doit contourner la RLS —
+c'est précisément ce qui rend le correctif sans impact sur l'app.
+Correctif : migration `20260808000000_enable_rls_and_lock_data_api` (RLS + revoke des
+privilèges anon/authenticated + coupure du default privilege qui ré-exposait les
+futures tables). Contrôles dans `prisma/sql/rls-check.sql`.
+
 ### [2026-03-31] Leçon : Screenshots Shopify App Store = exactement 1600x900
 Contexte : Les captures d'écran ne se chargeaient pas dans le formulaire
 Erreur : Dimensions incorrectes (1615x892 au lieu de 1600x900)

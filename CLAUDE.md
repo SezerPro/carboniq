@@ -264,6 +264,20 @@ npx prisma generate && npm run typecheck && npm run lint && npm run build
 - Après chaque migration : `npx prisma generate`
 - Dev : SQLite / Prod : PostgreSQL — écrire des migrations compatibles avec les deux
 
+### Sécurité Supabase — RLS obligatoire sur toute nouvelle table
+- Supabase expose le schéma `public` via son API Data (PostgREST). Prisma crée
+  ses tables **sans RLS**, et Supabase leur accorde automatiquement tous les droits
+  aux rôles `anon` / `authenticated` → toute nouvelle table est publique par défaut.
+- Toute migration qui crée une table doit se terminer par :
+  ```sql
+  ALTER TABLE "MaNouvelleTable" ENABLE ROW LEVEL SECURITY;
+  ```
+  **Aucune policy** : Carboniq n'utilise pas l'API Data, le deny-by-default est voulu.
+- **Jamais** de `FORCE ROW LEVEL SECURITY` : Prisma se connecte en `postgres`,
+  propriétaire des tables, et doit continuer à contourner la RLS.
+- Migration de référence : `20260808000000_enable_rls_and_lock_data_api`
+- Requêtes de contrôle : `prisma/sql/rls-check.sql` (à passer dans le SQL Editor)
+
 ### Client singleton
 ```typescript
 // lib/prisma.ts — unique instance dans tout le projet
@@ -386,6 +400,8 @@ tasks/
 - ❌ CSS global qui entre en conflit avec Polaris (utiliser le pattern `useEffect` + cleanup)
 - ❌ `new PrismaClient()` en dehors de `lib/prisma.ts`
 - ❌ Migration modifiée après application en prod
+- ❌ Table créée sans `ENABLE ROW LEVEL SECURITY` (elle serait publique via l'API Supabase)
+- ❌ `FORCE ROW LEVEL SECURITY` sur une table Prisma (casse tous les accès de l'app)
 - ❌ Données cross-tenant (scopage `shop` obligatoire partout)
 - ❌ Valeur CO₂ affichée sans unité (gCO₂e / kgCO₂e / tCO₂e)
 - ❌ Valeur numérique CO₂ sans police `DM Mono`
@@ -401,6 +417,7 @@ tasks/
 ## ✅ CHECKLIST AVANT PR
 
 - [ ] `npx prisma generate` fait si schema modifié
+- [ ] Toute nouvelle table a `ENABLE ROW LEVEL SECURITY` dans sa migration
 - [ ] `npm run typecheck` → 0 erreur
 - [ ] `npm run lint` → 0 warning
 - [ ] `npm run build` → succès
